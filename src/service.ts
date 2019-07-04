@@ -1,45 +1,52 @@
 import { Observable } from 'rxjs'
 import { Store } from './store'
-import { ActionOfService } from './types'
-import { injectable } from 'inversify'
+import { ActionOfService, ActionMethodOfService } from './types'
 import 'reflect-metadata'
 import { once, mapValues } from './utils/helpers'
 import { getEffectActionFactories, getOriginalFunctions } from './utils'
+import { injectable, postConstruct } from 'inversify'
 
 @injectable()
 export abstract class Service<State> {
   abstract defaultState: State
 
-  private __store: Store<State> | null | undefined
+  private _store: undefined | null | Store<State>
 
   destroy() {
-    if (this.__store) {
-      this.__store.destroy()
+    if (this.store) {
+      this.store.destroy()
     }
-    this.__store = undefined
   }
 
-  get store(): Store<State> {
+  private get store(): Store<State> {
     // return this.getStore()
-    if (this.__store === null) {
+    if (this._store === null) {
       throw new Error(
         `Error: store loop created, check the Service ${this.constructor.name} and its effects!`,
       )
-    } else if (this.__store === undefined) {
-      this.__store = null
-      const { effects, reducers, immerReducers, defineActions } = getOriginalFunctions(this)
-
-      Object.assign(this, mapValues(defineActions, ({ observable }) => observable))
-      this.__store = new Store({
-        nameForLog: this.constructor.name,
-        defaultState: this.defaultState,
-        effects,
-        reducers,
-        immerReducers,
-        defineActions,
-      })
+      // } else if (this._store === undefined) {
+      //   this._store = null
     }
-    return this.__store
+    if (this._store === undefined) {
+      throw new Error('Error: store is not initialed')
+    }
+    return this._store
+  }
+
+  @postConstruct()
+  initStore() {
+    const { effects, reducers, immerReducers, defineActions } = getOriginalFunctions(this)
+
+    Object.assign(this, mapValues(defineActions, ({ observable }) => observable))
+    this._store = null
+    this._store = new Store({
+      nameForLog: this.constructor.name,
+      defaultState: this.defaultState,
+      effects,
+      reducers,
+      immerReducers,
+      defineActions,
+    })
   }
   // TODO: set this to extract loading State logical
   // public loading: { [key in keyof State]?: boolean } = {}
@@ -59,4 +66,10 @@ export abstract class Service<State> {
   ) => M extends Service<infer S> ? ActionOfService<M, S> : never = once(() => {
     return getEffectActionFactories(this) as any
   })
+
+  getActionMethods<M extends Service<State>>(
+    this: M,
+  ): M extends Service<infer S> ? ActionMethodOfService<M, S> : never {
+    return this.store.triggerActions as any
+  }
 }

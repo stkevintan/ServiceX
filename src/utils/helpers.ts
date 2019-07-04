@@ -59,7 +59,7 @@ export function pick<T extends ObjectOf<any>, K extends keyof T>(
       obj[key] = object[key]
       return obj
     },
-    {} as Pick<T, K>,
+    {} as any,
   )
 }
 

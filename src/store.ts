@@ -118,7 +118,7 @@ export class Store<State> {
   private handleAction = ({ effectAction, reducerAction }: Action<State>) => {
     if (effectAction) {
       const { service, actionName, params } = effectAction
-      service.store.triggerActions[actionName](params)
+      ;(service.getActionMethods() as any)[actionName](params)
     }
 
     if (reducerAction) {

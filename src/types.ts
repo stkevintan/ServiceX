@@ -127,11 +127,3 @@ export type OriginalDefineActions = ObjectOf<{
 export type TriggerActions = ObjectOf<ActionMethod<any>>
 
 export type EffectActionFactories = ObjectOf<(params: any) => EffectAction>
-
-export type InjectService<M extends Service<S>, S> = Pick<
-  { [key in keyof M]: M[key] },
-  Exclude<
-    { [key in keyof M]: M[key] extends Service<any> ? key : never }[keyof M],
-    keyof Service<S>
-  >
->
