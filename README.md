@@ -1,3 +1,8 @@
+# ServiceX
+
+一个基于依赖注入，ts类型友好的前端状态管理库， 使用rxjs来管理副作用~
+
+
 ```ts
 import React from 'react'
 import ReactDOM from 'react-dom'
