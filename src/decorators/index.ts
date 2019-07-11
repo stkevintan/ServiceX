@@ -1,12 +1,7 @@
 import { Observable } from 'rxjs'
 import { Draft } from 'immer'
 
-import {
-  defineActionSymbols,
-  effectSymbols,
-  reducerSymbols,
-  immerReducerSymbols
-} from '../symbols'
+import { defineActionSymbols, effectSymbols, reducerSymbols, immerReducerSymbols } from '../symbols'
 import { EffectAction, TriggerActions } from '../types'
 import { createActionDecorator } from './actionRelated'
 
@@ -28,7 +23,7 @@ export const Effect: <A = any, S = any>() => DecoratorReturnType<
   (
     action: Observable<A>,
     state$: Observable<S>,
-    actions: TriggerActions
+    actions: TriggerActions,
   ) => Observable<EffectAction>
 > = createActionDecorator(effectSymbols)
 

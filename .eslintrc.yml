@@ -1,16 +1,17 @@
 ---
 plugins:
-- "@typescript-eslint"
+- "prettier"
+- "react-hooks"
 parser: "@typescript-eslint/parser"
 extends:
 - plugin:react/recommended
 - plugin:@typescript-eslint/recommended
-- prettier
 - prettier/@typescript-eslint
-globals:
-  Atomics: readonly
-  SharedArrayBuffer: readonly
+
 rules:
+  "prettier/prettier": 'error'
+  "react-hooks/rules-of-hooks": 'error'
+  "react-hooks/exhaustive-deps": 'warn'
   "@typescript-eslint/explicit-member-accessibility":
   - error
   - accessibility: no-public

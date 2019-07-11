@@ -9,9 +9,9 @@ export function getEffectActionFactories(target: Service<any>) {
       [name]: (params: any): EffectAction => ({
         service: target,
         actionName: name,
-        params
-      })
+        params,
+      }),
     }),
-    {}
+    {},
   )
 }

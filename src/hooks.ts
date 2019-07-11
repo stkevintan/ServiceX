@@ -36,7 +36,7 @@ export function useService<M extends Service<any>>(
       return serviceIdentifier
     }
     return container.get<M>(serviceIdentifier)
-  }, [])
+  }, [serviceIdentifier])
 
   let selector: Function = defaultSelector
   let options: Options = {
@@ -68,7 +68,7 @@ export function useService<M extends Service<any>>(
       )
       .subscribe(setState)
     return () => subscription.unsubscribe()
-  }, [service])
+  }, [selector, service])
 
   useEffect(
     () => () => {
@@ -76,7 +76,7 @@ export function useService<M extends Service<any>>(
         service.destroy()
       }
     },
-    [service],
+    [options.destoryOnUnmount, service],
   )
   return [state, service.getActionMethods()]
 }
