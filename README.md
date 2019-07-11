@@ -1,8 +1,16 @@
 # ServiceX
 
-一个基于依赖注入，ts类型友好的前端状态管理库， 使用rxjs来管理副作用~
+An Elegemnt and Powerful React State Management Framework.
 
+## Features
+1. Powerful type hint and strict type constraint with typescript
+2. Embrace the react hooks api
+3. No redundant boilerplate code
+4. Integrated with `Immer` and `RxJs` to handle complicated logic 
+5. Multi store design and use `Inversify` to implement dependence injection between stores
+6. Support redux-devtools-extension for debug!
 
+## Demo
 ```ts
 import React from 'react'
 import ReactDOM from 'react-dom'
@@ -78,3 +86,9 @@ const Count: React.FC<{}> = () => {
 
 ReactDOM.render(<Count />, document.getElementById('app'))
 ```
+
+## Usage
+//TODO
+
+## Examples
+//TODO
