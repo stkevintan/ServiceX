@@ -1,13 +1,16 @@
 import { Container as InversifyContainer, interfaces, injectable } from 'inversify'
-import { ScopeSymbol } from './symbols'
+import { ScopeSymbol, InjectSymbol } from './symbols'
 import { ConstructorOf } from './types'
 import { Service } from './service'
+import getDecorators from 'inversify-inject-decorators'
 
-export enum ScopeTypes {
-  Singleton = 'singleton',
-  Transient = 'transient',
-  Request = 'request',
+export const ScopeTypes = {
+  Singleton: Symbol('singleton'),
+  Transient: Symbol('transient'),
+  Request: Symbol('request'),
 }
+
+export type Scope = symbol | string | number
 
 export default class Container {
   private container: InversifyContainer
@@ -15,13 +18,17 @@ export default class Container {
     this.container = container || new InversifyContainer()
   }
 
+  getDecorators() {
+    return getDecorators(this.container)
+  }
+
   bind<T>(
-    // serviceIdentifier: interfaces.ServiceIdentifier<T>,
-    constructor: { new (...args: []): T },
-    scope: ScopeTypes = ScopeTypes.Singleton,
+    serviceIdentifier: interfaces.ServiceIdentifier<T>,
+    // constructor: { new (...args: []): T },
+    scope: Scope = ScopeTypes.Singleton,
   ): interfaces.BindingWhenOnSyntax<T> {
-    const binding = this.container.bind<T>(constructor).toSelf()
-    Reflect.defineMetadata(ScopeSymbol, scope, constructor)
+    const binding = this.container.bind<T>(serviceIdentifier).toSelf()
+    Reflect.defineMetadata(ScopeSymbol, scope, serviceIdentifier)
     switch (scope) {
       default:
       case ScopeTypes.Singleton:
@@ -33,9 +40,12 @@ export default class Container {
     }
   }
 
-  bindProvider<T>(constructor: { new (...args: []): T }, fn: interfaces.ProviderCreator<T>) {
-    const binding = this.container.bind<T>(constructor).toProvider<T>(fn)
-    Reflect.defineMetadata(ScopeSymbol, ScopeTypes.Singleton, constructor)
+  bindProvider<T>(
+    serviceIdentifier: interfaces.ServiceIdentifier<T>,
+    fn: interfaces.ProviderCreator<T>,
+  ) {
+    const binding = this.container.bind<T>(serviceIdentifier).toProvider<T>(fn)
+    Reflect.defineMetadata(ScopeSymbol, ScopeTypes.Singleton, serviceIdentifier)
     return binding
   }
 
@@ -48,40 +58,41 @@ export default class Container {
     return this.container.get<T>(serviceIdentifier)
   }
 
-  getScope<T>(serviceIdentifier: interfaces.ServiceIdentifier<T>): ScopeTypes | undefined {
+  getNamed<T>(serviceIdentifier: interfaces.ServiceIdentifier<T>, name: string | number | symbol) {
+    return this.container.getNamed<T>(serviceIdentifier, name)
+  }
+
+  getScope<T>(serviceIdentifier: interfaces.ServiceIdentifier<T>): Scope | undefined {
     return Reflect.getMetadata(ScopeSymbol, serviceIdentifier)
+  }
+
+  register<T>(serviceIdentifier: interfaces.ServiceIdentifier<T>, scope: Scope): void {
+    if (!this.container.isBoundNamed(serviceIdentifier, scope)) {
+      this.bind(serviceIdentifier, scope).whenTargetNamed(scope)
+    }
+  }
+
+  resolve<T>(serviceIdentifier: interfaces.ServiceIdentifier<T>, scope: Scope): T {
+    this.register(serviceIdentifier, scope)
+    return this.getNamed(serviceIdentifier, scope)
   }
 }
 
 export const container = new Container()
+const { lazyInjectNamed } = container.getDecorators()
 
-export const Injectable = <T extends ConstructorOf<Service<any>>>(scope?: ScopeTypes) => (
-  target: T,
-): any => {
-  const injectableTarget = injectable()(target)
-  container.bind<T>(injectableTarget, scope)
+export const Injectable = <T extends ConstructorOf<Service<any>>>() => (target: T): any => {
+  injectable()(target)
 }
 
-// export const Inject = <T extends ConstructorOf<Service<S>>, S>(serviceIdentifier: T) => {
-//   return (target: any, key: string, index?: number) => {
-//     const decoratedInjectNames = Reflect.getMetadata(InjectSymbol, target.constructor) || []
-//     Reflect.defineMetadata(InjectSymbol, [...decoratedInjectNames, key], target.constructor)
-
-//     inject(serviceIdentifier)(target, key, index)
-//   }
-// }
-
-// export function Inject(serviceIdentifier:) {
-//   return (target: any, key: string) => {
-//       const generatedId = id || keyToId(key);
-
-//       const getter = () => {
-//           return container.get(generatedId);
-//       };
-
-//       Reflect.deleteProperty[key];
-//       Reflect.defineProperty(target, key, {
-//           get: getter,
-//       });
-//   };
-// }
+export const Inject = <T extends ConstructorOf<Service<any>>>(
+  serviceIdentifier: T,
+  scope: Scope = ScopeTypes.Singleton,
+) => {
+  return (target: any, key: string) => {
+    const decoratedInjectNames = Reflect.getMetadata(InjectSymbol, target.constructor) || []
+    container.register(serviceIdentifier, scope)
+    Reflect.defineMetadata(InjectSymbol, [...decoratedInjectNames, key], target.constructor)
+    lazyInjectNamed(serviceIdentifier, scope as any)(target, key)
+  }
+}

@@ -11,7 +11,7 @@ interface CountState {
   count: number
 }
 
-@Injectable(ScopeTypes.Transient)
+@Injectable()
 class CountModel extends Service<CountState> {
   defaultState = { count: 0 }
 
@@ -26,7 +26,7 @@ describe('Service specs:', () => {
   let actions: ActionMethodOfService<CountModel, CountState>
 
   beforeEach(() => {
-    countModel = container.get(CountModel)
+    countModel = container.resolve(CountModel, ScopeTypes.Transient)
     actions = countModel.getActionMethods()
   })
 

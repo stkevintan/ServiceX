@@ -16,7 +16,7 @@ interface CountState {
   count: number
 }
 
-@Injectable(ScopeTypes.Transient)
+@Injectable()
 class Count extends Service<CountState> {
   defaultState = {
     count: 0,
@@ -39,7 +39,7 @@ class Count extends Service<CountState> {
 
 describe('DefineAction spec:', () => {
   // const testModule = Test.createTestingModule().compile()
-  const count = container.get<Count>(Count)
+  const count = container.resolve<Count>(Count, ScopeTypes.Transient)
   const countActions = count.getActionMethods()
   const getCount = () => count.getState().count
 

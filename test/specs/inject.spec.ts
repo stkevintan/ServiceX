@@ -7,8 +7,8 @@ import {
   ActionMethodOfService,
   Effect,
   EffectAction,
+  Inject,
 } from '../../src'
-import { inject } from 'inversify'
 import { Observable } from 'rxjs'
 import { map } from 'rxjs/operators'
 
@@ -16,7 +16,7 @@ interface State {
   count: number
 }
 
-@Injectable(ScopeTypes.Transient)
+@Injectable()
 class OtherModel extends Service<State> {
   defaultState = {
     count: -1,
@@ -27,16 +27,13 @@ class OtherModel extends Service<State> {
   }
 }
 
-@Injectable(ScopeTypes.Transient)
+@Injectable()
 class CountModel extends Service<State> {
   defaultState = { count: 0 }
 
-  @inject(OtherModel) other!: OtherModel
+  @Inject(OtherModel, ScopeTypes.Transient) other!: OtherModel
+  @Inject(OtherModel, ScopeTypes.Transient) other2!: OtherModel
 
-  // you can omit the inject decorator, if you are using constructor inject
-  constructor(public other2: OtherModel) {
-    super()
-  }
   @Reducer()
   setCount(state: State, count: number): State {
     return { ...state, count }
@@ -58,7 +55,7 @@ describe('Inject specs:', () => {
   let actions: ActionMethodOfService<CountModel, State>
 
   beforeEach(() => {
-    countModel = container.get(CountModel)
+    countModel = container.resolve(CountModel, ScopeTypes.Transient)
     actions = countModel.getActionMethods()
   })
 

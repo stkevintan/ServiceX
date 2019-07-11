@@ -98,6 +98,13 @@ export type ActionOfService<M extends Service<S>, S> = Pick<
   { [key in keyof M]: ActionMethod<UnpackPayload<M[key], S>, EffectAction> },
   PayloadMethodKeySet<M, S>
 >
+export type InjectService<M extends Service<S>, S> = Pick<
+  { [key in keyof M]: M[key] },
+  Exclude<
+    { [key in keyof M]: M[key] extends Service<any> ? key : never }[keyof M],
+    keyof Service<S>
+  >
+>
 
 export interface ObjectOf<T> {
   [key: string]: T
