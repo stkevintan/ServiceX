@@ -10,6 +10,7 @@ import {
   container,
   ScopeTypes,
   Inject,
+  Scope,
 } from '../../src'
 
 interface TipsState {
@@ -43,7 +44,7 @@ class Count extends Service<CountState> {
     count: 0,
   }
 
-  @Inject(Tips, ScopeTypes.Transient) readonly tips!: Tips
+  @Inject(Tips) @Scope(ScopeTypes.Transient) readonly tips!: Tips
 
   @Reducer()
   setCount(state: CountState, count: number): CountState {

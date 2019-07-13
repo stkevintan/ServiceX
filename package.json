@@ -67,7 +67,7 @@
     "rimraf": "^2.6.3",
     "rxjs": "^6.5.2",
     "ts-jest": "^24.0.2",
-    "typescript": "^3.5.2"
+    "typescript": "^3.5.3"
   },
   "peerDependencies": {
     "immer": "^3.1.2",
