@@ -10,7 +10,16 @@ An Elegemnt and Powerful React State Management Framework.
 5. Multi store design and use `Inversify` to implement dependence injection between stores
 6. Support redux-devtools-extension for debug!
 
+## Install
+```
+npm install --save service-x immer reflect-metadata inversify rxjs
+```
 ## Demo
+
+### Codesandebox
+- [basic online](https://codesandbox.io/s/service-x-basic-ppsuo)
+
+
 ```ts
 import React from 'react'
 import ReactDOM from 'react-dom'
@@ -24,7 +33,7 @@ import {
   Effect,
   EffectAction,
   DefineAction,
-} from '../src'
+} from 'service-x'
 import { Observable, of } from 'rxjs'
 import { withLatestFrom, map, catchError, repeatWhen } from 'rxjs/operators'
 
