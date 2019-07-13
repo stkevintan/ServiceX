@@ -31,5 +31,6 @@ export const allActionSymbols = [
 ]
 
 export const ScopeSymbol = Symbol('scope')
+export const ScopeKeySymbol = Symbol('scopeKey')
 export const StoreSymbol = Symbol('store')
 export const InjectSymbol = Symbol('inject')

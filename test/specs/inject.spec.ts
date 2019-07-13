@@ -8,6 +8,7 @@ import {
   Effect,
   EffectAction,
   Inject,
+  Scope,
 } from '../../src'
 import { Observable } from 'rxjs'
 import { map } from 'rxjs/operators'
@@ -31,8 +32,13 @@ class OtherModel extends Service<State> {
 class CountModel extends Service<State> {
   defaultState = { count: 0 }
 
-  @Inject(OtherModel, ScopeTypes.Transient) other!: OtherModel
-  @Inject(OtherModel, ScopeTypes.Transient) other2!: OtherModel
+  // type 1
+  @Inject(OtherModel) @Scope(ScopeTypes.Transient) other!: OtherModel
+
+  // type 2
+  constructor(@Scope(ScopeTypes.Transient) public other2: OtherModel) {
+    super()
+  }
 
   @Reducer()
   setCount(state: State, count: number): State {

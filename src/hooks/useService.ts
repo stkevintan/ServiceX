@@ -1,23 +1,24 @@
-import { container, ScopeTypes, Scope } from '../Container'
+import { container, ScopeTypes, ScopeType } from '../ioc'
 import { useMemo } from 'react'
 import { Service } from '../service'
 import { ConstructorOf } from '../types'
-import { UseServiceInstanceResult, useServiceInstance } from './useServiceInstance'
+import { useServiceInstance } from './useServiceInstance'
+import { ServiceResultWithSelf } from './types'
 
 interface UseServiceOptions {
-  scope?: Scope
+  scope?: ScopeType
 }
 
 export function useService<M extends Service<any>>(
   serviceConstructor: ConstructorOf<M>,
   options?: UseServiceOptions,
-): M extends Service<infer SS> ? UseServiceInstanceResult<M, SS> : never
+): M extends Service<infer SS> ? ServiceResultWithSelf<M, SS> : never
 
 export function useService<M extends Service<any>, F>(
   serviceConstructor: ConstructorOf<M>,
   selector: (state: M extends Service<infer SS> ? Readonly<SS> : never) => F,
   options?: UseServiceOptions,
-): M extends Service<infer SS> ? UseServiceInstanceResult<M, SS, typeof selector> : never
+): M extends Service<infer SS> ? ServiceResultWithSelf<M, SS, typeof selector> : never
 
 export function useService<M extends Service<any>>(
   serviceIdentifier: ConstructorOf<M>,
@@ -40,7 +41,6 @@ export function useService<M extends Service<any>>(
     }
     return [selector, options]
   }, [args])
-
   const service = useMemo(() => {
     return container.resolve<M>(serviceIdentifier, options.scope!)
   }, [options.scope, serviceIdentifier])
@@ -53,5 +53,5 @@ export function useService<M extends Service<any>>(
     [options.scope],
   )
 
-  return useServiceInstance(service, selector, serviceInstanceOptions)
+  return [...useServiceInstance(service, selector, serviceInstanceOptions), service] as any
 }

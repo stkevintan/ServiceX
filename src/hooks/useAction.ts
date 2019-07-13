@@ -1,14 +1,13 @@
-import { ConstructorOf } from '../../esnext'
-import { ActionMethodOfService } from '../types'
+import { ActionMethodOfService, ConstructorOf } from '../types'
 import { Service } from '../service'
 import { useService } from './useService'
 import { useServiceInstance } from './useServiceInstance'
-import { Scope } from '../Container'
+import { ScopeType } from '../ioc'
 
 const noSelected = () => undefined
 export function useAction<M extends Service<any>>(
   service: ConstructorOf<M>,
-  scope?: Scope,
+  scope?: ScopeType,
 ): M extends Service<infer S> ? ActionMethodOfService<M, S> : never {
   const [, actions] = useService(service, noSelected, { scope })
   return actions as any

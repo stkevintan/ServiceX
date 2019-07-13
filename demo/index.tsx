@@ -10,8 +10,8 @@ import {
   Effect,
   EffectAction,
   DefineAction,
-  Inject,
   useServiceInstance,
+  Inject,
 } from '../src'
 import { Observable, of } from 'rxjs'
 import { withLatestFrom, map, catchError, repeatWhen } from 'rxjs/operators'
@@ -26,11 +26,16 @@ class OtherService extends Service<State> {
     count: 1,
   }
 }
+
 // service.ts
 @Injectable()
 class CountService extends Service<State> {
   defaultState = {
     count: 0,
+  }
+
+  constructor(public other2: OtherService) {
+    super()
   }
 
   @Inject(OtherService) other!: OtherService
@@ -69,16 +74,19 @@ class CountService extends Service<State> {
 }
 
 const Count: React.FC<{}> = () => {
-  const [state, actions, deps] = useService(CountService)
-  const [state2] = useServiceInstance(deps.other)
+  const [state, actions, service] = useService(CountService)
+  const [state2] = useServiceInstance(service.other)
+  const [state3] = useServiceInstance(service.other2)
   return (
     <div className="container">
       <span className="count">
-        {state.count},{state2.count}
+        {state.count},{state2.count}, {state3.count}
       </span>
-      <button onClick={() => actions.add(1)}>Add one</button>
-      <button onClick={() => actions.subtract(1)}>Subtract one</button>
-      <button onClick={() => actions.reset()}>Reset</button>
+      <div>
+        <button onClick={() => actions.add(1)}>Add one</button>
+        <button onClick={() => actions.subtract(1)}>Subtract one</button>
+        <button onClick={() => actions.reset()}>Reset</button>
+      </div>
     </div>
   )
 }
