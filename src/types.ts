@@ -68,11 +68,13 @@ type UnpackImmerReducerPayload<Func, State> = Func extends (
 
 type UnpackDefineActionPayload<OB> = OB extends Observable<infer P> ? ArgumentsType<[P]> : never
 
-type UnpackPayload<F, S> =
-  | UnpackEffectPayload<F, S>
-  | UnpackImmerReducerPayload<F, S>
-  | UnpackReducerPayload<F, S>
-  | UnpackDefineActionPayload<F>
+type UnpackPayload<F, S> = UnpackEffectPayload<F, S> extends never
+  ? UnpackReducerPayload<F, S> extends never
+    ? UnpackImmerReducerPayload<F, S> extends never
+      ? UnpackDefineActionPayload<F>
+      : UnpackImmerReducerPayload<F, S>
+    : UnpackReducerPayload<F, S>
+  : UnpackEffectPayload<F, S>
 
 type PayloadMethodKeySet<M, S, SS extends keyof M = Exclude<keyof M, keyof Service<S>>> = {
   [key in SS]: M[key] extends
