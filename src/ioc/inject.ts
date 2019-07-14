@@ -1,4 +1,11 @@
-import { interfaces, injectable, METADATA_KEY, inject, tagged } from 'inversify'
+import {
+  interfaces,
+  injectable,
+  METADATA_KEY,
+  inject,
+  tagged,
+  LazyServiceIdentifer,
+} from 'inversify'
 import { container, ScopeTypes, ScopeType } from './Container'
 import { ConstructorOf } from '../types'
 import { Service } from '../service'
@@ -33,13 +40,23 @@ export const Injectable = <T extends ConstructorOf<Service<any>>>() => (target: 
   }
 }
 
-export const Inject = <T extends interfaces.ServiceIdentifier<Service<any>>>(
+export const Inject = <
+  T extends interfaces.ServiceIdentifier<Service<any>> | LazyServiceIdentifer<Service<any>>
+>(
   serviceIdentifier: T,
 ) => {
   return (target: any, key: string, index?: number) => {
     const scope = getScope(target, key, index)
-    container.register(serviceIdentifier, scope)
-    tagged(ScopeKeySymbol, scope)(target, key, index)
+    if (serviceIdentifier instanceof LazyServiceIdentifer) {
+      const id = serviceIdentifier.unwrap()
+      container.register(id, scope)
+    } else {
+      container.register(serviceIdentifier as any, scope)
+    }
+    // Dont retag the scope
+    if (typeof index !== 'number') {
+      tagged(ScopeKeySymbol, scope)(target, key, index)
+    }
     inject(serviceIdentifier)(target, key, index)
   }
 }

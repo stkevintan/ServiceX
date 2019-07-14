@@ -1,5 +1,5 @@
 import { Container as InversifyContainer, interfaces } from 'inversify'
-import { ScopeSymbol, ScopeKeySymbol } from '../symbols'
+import { ScopeKeySymbol } from '../symbols'
 
 export const ScopeTypes = {
   Singleton: Symbol('singleton'),
@@ -40,7 +40,6 @@ export default class Container {
   // }
 
   unbind(serviceIdentifier: interfaces.ServiceIdentifier<any>) {
-    Reflect.deleteMetadata(ScopeSymbol, serviceIdentifier)
     this.container.unbind(serviceIdentifier)
   }
 
@@ -55,10 +54,6 @@ export default class Container {
   ) {
     return this.container.getTagged<T>(serviceIdentifier, key, value)
   }
-
-  // getScope<T>(serviceIdentifier: interfaces.ServiceIdentifier<T>): ScopeType | undefined {
-  //   return Reflect.getMetadata(ScopeSymbol, serviceIdentifier)
-  // }
 
   isBoundInScope<T>(serviceIdentifier: interfaces.ServiceIdentifier<T>, scope: ScopeType): boolean {
     return this.container.isBoundTagged(serviceIdentifier, ScopeKeySymbol, scope)

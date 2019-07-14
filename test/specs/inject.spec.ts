@@ -12,6 +12,7 @@ import {
 } from '../../src'
 import { Observable } from 'rxjs'
 import { map } from 'rxjs/operators'
+import { LazyServiceIdentifer } from 'inversify'
 
 interface State {
   count: number
@@ -36,7 +37,17 @@ class CountModel extends Service<State> {
   @Inject(OtherModel) @Scope(ScopeTypes.Transient) other!: OtherModel
 
   // type 2
-  constructor(@Scope(ScopeTypes.Transient) public other2: OtherModel) {
+  constructor(
+    public other1: OtherModel,
+
+    @Scope(ScopeTypes.Transient) public other2: OtherModel,
+
+    @Inject(OtherModel) @Scope(ScopeTypes.Transient) public other3: OtherModel,
+
+    @Inject(new LazyServiceIdentifer(() => OtherModel))
+    @Scope(ScopeTypes.Transient)
+    public other4: OtherModel,
+  ) {
     super()
   }
 
@@ -69,6 +80,23 @@ describe('Inject specs:', () => {
     expect(countModel.getState()).toEqual({ count: 0 })
     actions.setCount(10)
     expect(countModel.getState()).toEqual({ count: 10 })
+  })
+
+  it('should property inject work', () => {
+    expect(countModel.other.getState()).toEqual({ count: -1 })
+  })
+
+  it('should constructor inject work', () => {
+    ;['other1', 'other2', 'other3', 'other4'].forEach((key: any) => {
+      expect((countModel as any)[key].getState()).toEqual({ count: -1 })
+    })
+  })
+
+  it('should scope decorator default to Singleton', () => {
+    countModel.other1.getActionMethods().subtract(1)
+    container.unbind(CountModel)
+    countModel = container.resolve(CountModel, ScopeTypes.Transient)
+    expect(countModel.other1.getState()).toEqual({ count: -2 })
   })
 
   it('syncCount', () => {

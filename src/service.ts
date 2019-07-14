@@ -14,12 +14,14 @@ export abstract class Service<State> {
   destroy() {
     if (this.store) {
       this.store.destroy()
+      Reflect.deleteMetadata(StoreSymbol, this)
     }
   }
 
   private get store(): Store<State> {
     if (!Reflect.hasMetadata(StoreSymbol, this)) {
-      throw new Error('Error: store is not init')
+      this.initStore()
+      // throw new Error('Error: store is not init')
     }
     const store = Reflect.getMetadata(StoreSymbol, this)
 

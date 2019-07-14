@@ -15,6 +15,7 @@ import {
 } from '../src'
 import { Observable, of } from 'rxjs'
 import { withLatestFrom, map, catchError, repeatWhen } from 'rxjs/operators'
+import { LazyServiceIdentifer } from 'inversify'
 
 interface State {
   count: number
@@ -34,11 +35,11 @@ class CountService extends Service<State> {
     count: 0,
   }
 
-  constructor(public other2: OtherService) {
+  constructor() {
     super()
   }
-
-  @Inject(OtherService) other!: OtherService
+  @Inject(new LazyServiceIdentifer(() => OtherService)) other2!: OtherService
+  @Inject(new LazyServiceIdentifer(() => OtherService)) other!: OtherService
 
   @DefineAction()
   retry$!: Observable<void>

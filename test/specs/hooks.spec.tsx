@@ -130,6 +130,28 @@ describe('Hooks spec:', () => {
       expect(spy.mock.calls).toEqual([[1], [3]])
     })
 
+    it('should not trigger re-render if selector is provided', () => {
+      const spy = jest.fn()
+
+      const TestComponent = () => {
+        const [state, actions] = useService(Count, () => undefined, { scope: ScopeTypes.Transient })
+        expect(state).toBeUndefined()
+        const addOne = useCallback(() => actions.add(1), [actions])
+        spy()
+        return (
+          <div>
+            <button id={CountAction.ADD} onClick={addOne}>
+              add one
+            </button>
+          </div>
+        )
+      }
+      const renderer = create(<TestComponent />)
+      // https://github.com/facebook/react/issues/14050 to trigger useEffect manually
+      renderer.update(<TestComponent />)
+      act(() => renderer.root.findByProps({ id: CountAction.ADD }).props.onClick())
+      expect(spy.mock.calls).toHaveLength(2)
+    })
     it('should not trigger re-render when using useAction', () => {
       const spy = jest.fn()
       const count = container.resolve(Count, ScopeTypes.Transient)
