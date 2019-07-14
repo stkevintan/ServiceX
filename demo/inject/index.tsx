@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
 import './index.less'
-import { useService, useServiceInstance } from '../src'
+import { useService, useServiceInstance } from '../../src'
 import { CarService } from './car.service'
 
 const Count: React.FC<{}> = () => {

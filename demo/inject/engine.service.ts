@@ -1,4 +1,4 @@
-import { Service, Injectable } from '../src'
+import { Service, Injectable } from '../../src'
 
 export interface Engine {
   name: string

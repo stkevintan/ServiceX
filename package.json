@@ -7,7 +7,7 @@
   "esnext": "esnext/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "start": "parcel ./demo/index.html",
+    "start": "parcel ./demo/basic/index.html",
     "build": "yarn build:es5 & yarn build:esm & yarn build:next",
     "build:es5": "rimraf ./dist && tsc -p ./tsconfig.build.json",
     "build:esm": "rimraf ./esm && tsc -p ./tsconfig.build.json -m esnext --outDir esm",
@@ -17,7 +17,7 @@
     "lint:eslint": "eslint . --ext .ts,.tsx --fix --max-warnings 0",
     "lint:tsc": "tsc -p ./tsconfig.json --noEmit",
     "test": "jest --collectCoverage",
-    "publish": "yarn build && npm publish"
+    "publish": "npm run build && npm publish"
   },
   "keywords": [
     "react",

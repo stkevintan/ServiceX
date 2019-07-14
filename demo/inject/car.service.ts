@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/explicit-member-accessibility */
-import { Service, Injectable, ImmerReducer, Scope, ScopeTypes, Inject } from '../src'
+import { Service, Injectable, ImmerReducer, Scope, ScopeTypes, Inject } from '../../src'
 
 import { Engine, LowEngineService, MedianEngineService, HighEngineService } from './engine.service'
 
