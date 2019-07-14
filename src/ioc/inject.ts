@@ -26,6 +26,19 @@ export const getScope = (target: any, key: string, index?: number) => {
   return ScopeTypes.Singleton
 }
 
+const tagScope = (scope: ScopeType) => (target: any, key?: string, index?: number) => {
+  if (typeof index !== 'number') {
+    tagged(ScopeKeySymbol, scope)(target, key!, undefined)
+    return
+  }
+  // 判重
+  const metadata = Reflect.getMetadata(METADATA_KEY.TAGGED, target) || {}
+  const taggedList = metadata[index] || []
+  if (taggedList.every((tag: any) => tag.key !== ScopeKeySymbol)) {
+    tagged(ScopeKeySymbol, scope)(target, undefined as any, index)
+  }
+}
+
 export const Injectable = <T extends ConstructorOf<Service<any>>>() => (target: T): any => {
   injectable()(target)
   const parameters = Reflect.getMetadata(METADATA_KEY.PARAM_TYPES, target)
@@ -34,7 +47,8 @@ export const Injectable = <T extends ConstructorOf<Service<any>>>() => (target: 
     if (parameter.prototype instanceof Service) {
       const scope = getScope(target, '', index)
       // inversify type bugs
-      tagged(ScopeKeySymbol, scope)(target, undefined as any, index)
+      tagScope(scope)(target, undefined, index)
+      // tagged(ScopeKeySymbol, scope)(target, undefined as any, index)
       container.register(parameter, scope)
     }
   }
@@ -53,10 +67,7 @@ export const Inject = <
     } else {
       container.register(serviceIdentifier as any, scope)
     }
-    // Dont retag the scope
-    if (typeof index !== 'number') {
-      tagged(ScopeKeySymbol, scope)(target, key, index)
-    }
+    tagScope(scope)(target, key, index)
     inject(serviceIdentifier)(target, key, index)
   }
 }
