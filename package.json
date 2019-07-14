@@ -1,6 +1,6 @@
 {
   "name": "service-x",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "serviceX is a state management solution for react",
   "main": "dist/index.js",
   "module": "esm/index.js",
