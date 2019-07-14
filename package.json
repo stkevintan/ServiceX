@@ -1,6 +1,6 @@
 {
   "name": "service-x",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "serviceX is a state management solution for react",
   "main": "dist/index.js",
   "module": "esm/index.js",
@@ -16,7 +16,8 @@
     "lint": "yarn lint:eslint && yarn lint:tsc",
     "lint:eslint": "eslint . --ext .ts,.tsx --fix --max-warnings 0",
     "lint:tsc": "tsc -p ./tsconfig.json --noEmit",
-    "test": "jest --collectCoverage"
+    "test": "jest --collectCoverage",
+    "publish": "yarn build && npm publish"
   },
   "keywords": [
     "react",
