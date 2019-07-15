@@ -16,8 +16,7 @@
     "lint": "yarn lint:eslint && yarn lint:tsc",
     "lint:eslint": "eslint . --ext .ts,.tsx --fix --max-warnings 0",
     "lint:tsc": "tsc -p ./tsconfig.json --noEmit",
-    "test": "jest --collectCoverage",
-    "publish": "npm run build && npm publish"
+    "test": "jest --collectCoverage"
   },
   "keywords": [
     "react",
