@@ -26,7 +26,7 @@ describe('Service specs:', () => {
   let actions: ActionMethodOfService<CountModel, CountState>
 
   beforeEach(() => {
-    countModel = container.resolve(CountModel, ScopeTypes.Transient)
+    countModel = container.resolveInScope(CountModel, ScopeTypes.Transient)
     actions = countModel.getActionMethods()
   })
 

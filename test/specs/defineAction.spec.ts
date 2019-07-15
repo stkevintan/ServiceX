@@ -39,7 +39,7 @@ class Count extends Service<CountState> {
 
 describe('DefineAction spec:', () => {
   // const testModule = Test.createTestingModule().compile()
-  const count = container.resolve<Count>(Count, ScopeTypes.Transient)
+  const count = container.resolveInScope<Count>(Count, ScopeTypes.Transient)
   const countActions = count.getActionMethods()
   const getCount = () => count.getState().count
 

@@ -154,7 +154,7 @@ describe('Hooks spec:', () => {
     })
     it('should not trigger re-render when using useAction', () => {
       const spy = jest.fn()
-      const count = container.resolve(Count, ScopeTypes.Transient)
+      const count = container.resolveInScope(Count, ScopeTypes.Transient)
 
       const TestComponent = () => {
         const actions = useAction(Count)

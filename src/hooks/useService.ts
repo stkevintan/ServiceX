@@ -42,7 +42,7 @@ export function useService<M extends Service<any>>(
     return [selector, options]
   }, [args])
   const service = useMemo(() => {
-    return container.resolve<M>(serviceIdentifier, options.scope!)
+    return container.resolveInScope<M>(serviceIdentifier, options.scope!)
   }, [options.scope, serviceIdentifier])
 
   const serviceInstanceOptions = useMemo(

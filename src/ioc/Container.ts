@@ -1,4 +1,4 @@
-import { Container as InversifyContainer, interfaces } from 'inversify'
+import { Container as InversifyContainer, interfaces, METADATA_KEY } from 'inversify'
 import { ScopeKeySymbol } from '../symbols'
 
 export const ScopeTypes = {
@@ -15,11 +15,15 @@ export default class Container {
     this.container = container || new InversifyContainer()
   }
 
-  bind<T>(
+  bind<T>(serviceIdentifier: interfaces.ServiceIdentifier<T>): interfaces.BindingToSyntax<T> {
+    return this.container.bind(serviceIdentifier)
+  }
+
+  bindScope<T>(
     serviceIdentifier: interfaces.ServiceIdentifier<T>,
     scope: ScopeType = ScopeTypes.Singleton,
   ): interfaces.BindingWhenOnSyntax<T> {
-    const binding = this.container.bind<T>(serviceIdentifier).toSelf()
+    const binding = this.bind<T>(serviceIdentifier).toSelf()
     switch (scope) {
       default:
       case ScopeTypes.Singleton:
@@ -31,21 +35,32 @@ export default class Container {
     }
   }
 
-  // bindProvider<T>(
-  //   serviceIdentifier: interfaces.ServiceIdentifier<T>,
-  //   fn: interfaces.ProviderCreator<T>,
-  // ) {
-  //   const binding = this.container.bind<T>(serviceIdentifier).toProvider<T>(fn)
-  //   return binding
-  // }
+  bindProvider<T>(
+    serviceIdentifier: interfaces.ServiceIdentifier<T>,
+    fn: interfaces.ProviderCreator<T>,
+  ) {
+    const binding = this.bind<T>(serviceIdentifier).toProvider<T>(fn)
+    return binding
+  }
 
   unbind(serviceIdentifier: interfaces.ServiceIdentifier<any>) {
     this.container.unbind(serviceIdentifier)
   }
 
-  // get<T>(serviceIdentifier: interfaces.ServiceIdentifier<T>) {
-  //   return this.container.get<T>(serviceIdentifier)
-  // }
+  unbindAll() {
+    this.container.unbindAll()
+  }
+
+  get<T>(serviceIdentifier: interfaces.ServiceIdentifier<T>) {
+    return this.container.get<T>(serviceIdentifier)
+  }
+
+  getNamed<T>(
+    serviceIdentifier: interfaces.ServiceIdentifier<T>,
+    named: string | number | symbol,
+  ): T {
+    return this.getTagged<T>(serviceIdentifier, METADATA_KEY.NAMED_TAG, named)
+  }
 
   getTagged<T>(
     serviceIdentifier: interfaces.ServiceIdentifier<T>,
@@ -55,17 +70,65 @@ export default class Container {
     return this.container.getTagged<T>(serviceIdentifier, key, value)
   }
 
-  isBoundInScope<T>(serviceIdentifier: interfaces.ServiceIdentifier<T>, scope: ScopeType): boolean {
-    return this.container.isBoundTagged(serviceIdentifier, ScopeKeySymbol, scope)
+  getAll<T>(serviceIdentifier: interfaces.ServiceIdentifier<T>): T[] {
+    return this.container.getAll(serviceIdentifier)
   }
-  register<T>(serviceIdentifier: interfaces.ServiceIdentifier<T>, scope: ScopeType): void {
+
+  getAllTagged<T>(
+    serviceIdentifier: interfaces.ServiceIdentifier<T>,
+    key: string | number | symbol,
+    value: any,
+  ): T[] {
+    return this.container.getAllTagged(serviceIdentifier, key, value)
+  }
+
+  getAllNamed<T>(
+    serviceIdentifier: interfaces.ServiceIdentifier<T>,
+    named: string | number | symbol,
+  ): T[] {
+    return this.getAllTagged<T>(serviceIdentifier, METADATA_KEY.NAMED_TAG, named)
+  }
+
+  rebind<T>(serviceIdentifier: interfaces.ServiceIdentifier<T>): interfaces.BindingToSyntax<T> {
+    this.unbind(serviceIdentifier)
+    return this.container.bind(serviceIdentifier)
+  }
+
+  applyMiddleware(...middlewares: interfaces.Middleware[]): void {
+    this.container.applyMiddleware(...middlewares)
+  }
+
+  isBound(serviceIdentifier: interfaces.ServiceIdentifier<any>): boolean {
+    return this.container.isBound(serviceIdentifier)
+  }
+
+  isBoundNamed(
+    serviceIdentifier: interfaces.ServiceIdentifier<any>,
+    named: string | number | symbol,
+  ): boolean {
+    return this.isBoundTagged(serviceIdentifier, METADATA_KEY.NAMED_TAG, named)
+  }
+
+  isBoundTagged(
+    serviceIdentifier: interfaces.ServiceIdentifier<any>,
+    key: string | number | symbol,
+    value: any,
+  ): boolean {
+    return this.container.isBoundTagged(serviceIdentifier, key, value)
+  }
+
+  isBoundInScope<T>(serviceIdentifier: interfaces.ServiceIdentifier<T>, scope: ScopeType): boolean {
+    return this.isBoundTagged(serviceIdentifier, ScopeKeySymbol, scope)
+  }
+
+  registerInScope<T>(serviceIdentifier: interfaces.ServiceIdentifier<T>, scope: ScopeType): void {
     if (!this.isBoundInScope(serviceIdentifier, scope)) {
-      this.bind(serviceIdentifier, scope).whenTargetTagged(ScopeKeySymbol, scope)
+      this.bindScope(serviceIdentifier, scope).whenTargetTagged(ScopeKeySymbol, scope)
     }
   }
 
-  resolve<T>(serviceIdentifier: interfaces.ServiceIdentifier<T>, scope: ScopeType): T {
-    this.register(serviceIdentifier, scope)
+  resolveInScope<T>(serviceIdentifier: interfaces.ServiceIdentifier<T>, scope: ScopeType): T {
+    this.registerInScope(serviceIdentifier, scope)
     return this.getTagged(serviceIdentifier, ScopeKeySymbol, scope)
   }
 }

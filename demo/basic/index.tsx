@@ -15,7 +15,6 @@ import {
 } from '../../src'
 import { Observable, of } from 'rxjs'
 import { withLatestFrom, map, catchError, repeatWhen } from 'rxjs/operators'
-import { LazyServiceIdentifer } from 'inversify'
 
 interface State {
   count: number

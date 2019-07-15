@@ -40,7 +40,7 @@ describe('ImmerReducer spec:', () => {
   let actions: ActionMethodOfService<Tips, TipsState>
 
   beforeEach(() => {
-    tips = container.resolve(Tips, ScopeTypes.Transient)
+    tips = container.resolveInScope(Tips, ScopeTypes.Transient)
     actions = tips.getActionMethods()
   })
 

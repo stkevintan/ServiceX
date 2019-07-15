@@ -72,7 +72,7 @@ describe('Inject specs:', () => {
   let actions: ActionMethodOfService<CountModel, State>
 
   beforeEach(() => {
-    countModel = container.resolve(CountModel, ScopeTypes.Transient)
+    countModel = container.resolveInScope(CountModel, ScopeTypes.Transient)
     actions = countModel.getActionMethods()
   })
 
@@ -95,7 +95,7 @@ describe('Inject specs:', () => {
   it('should scope decorator default to Singleton', () => {
     countModel.other1.getActionMethods().subtract(1)
     container.unbind(CountModel)
-    countModel = container.resolve(CountModel, ScopeTypes.Transient)
+    countModel = container.resolveInScope(CountModel, ScopeTypes.Transient)
     expect(countModel.other1.getState()).toEqual({ count: -2 })
   })
 

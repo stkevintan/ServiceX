@@ -88,7 +88,7 @@ class Count extends Service<CountState> {
 }
 
 describe('Effect spec:', () => {
-  const count = container.resolve(Count, ScopeTypes.Transient)
+  const count = container.resolveInScope(Count, ScopeTypes.Transient)
   const countActions = count.getActionMethods()
   const tips = count.tips
   const getCount = () => count.getState().count
