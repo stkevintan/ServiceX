@@ -1,11 +1,12 @@
-import { container, ScopeTypes, ScopeType } from '../ioc'
+import { container, ScopeType } from '../ioc'
 import { useMemo } from 'react'
 import { Service } from '../service'
 import { ConstructorOf } from '../types'
 import { useServiceInstance } from './useServiceInstance'
 import { ServiceResultWithSelf } from './types'
+import { Transient, Singleton, Request } from '../symbols'
 
-interface UseServiceOptions {
+export interface UseServiceOptions {
   scope?: ScopeType
 }
 
@@ -26,7 +27,7 @@ export function useService<M extends Service<any>>(
 ) {
   const [selector, options] = useMemo(() => {
     let options = {
-      scope: ScopeTypes.Singleton,
+      scope: Singleton,
     }
     let selector: any
     if (args.length === 1) {
@@ -47,8 +48,7 @@ export function useService<M extends Service<any>>(
 
   const serviceInstanceOptions = useMemo(
     () => ({
-      destroyOnUnmount:
-        options.scope === ScopeTypes.Transient || options.scope === ScopeTypes.Request,
+      destroyOnUnmount: options.scope === Transient || options.scope === Request,
     }),
     [options.scope],
   )

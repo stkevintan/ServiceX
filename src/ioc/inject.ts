@@ -6,10 +6,10 @@ import {
   tagged,
   LazyServiceIdentifer,
 } from 'inversify'
-import { container, ScopeTypes, ScopeType } from './Container'
+import { container, ScopeType } from './Container'
 import { ConstructorOf } from '../types'
 import { Service } from '../service'
-import { ScopeSymbol, ScopeKeySymbol } from '../symbols'
+import { ScopeSymbol, ScopeKeySymbol, Singleton } from '../symbols'
 
 export const Scope = (scope: ScopeType) => {
   return (target: any, key: string, index?: number) => {
@@ -23,7 +23,7 @@ export const getScope = (target: any, key: string, index?: number) => {
   if (Reflect.hasMetadata(ScopeSymbol, target.constructor, defineKey)) {
     return Reflect.getMetadata(ScopeSymbol, target.constructor, defineKey)
   }
-  return ScopeTypes.Singleton
+  return Singleton
 }
 
 const tagScope = (scope: ScopeType) => (target: any, key?: string, index?: number) => {

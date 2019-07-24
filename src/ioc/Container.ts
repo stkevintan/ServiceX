@@ -1,11 +1,5 @@
 import { Container as InversifyContainer, interfaces, METADATA_KEY } from 'inversify'
-import { ScopeKeySymbol } from '../symbols'
-
-export const ScopeTypes = {
-  Singleton: Symbol('singleton'),
-  Transient: Symbol('transient'),
-  Request: Symbol('request'),
-}
+import { ScopeKeySymbol, Singleton, Transient, Request } from '../symbols'
 
 export type ScopeType = symbol | string | number
 
@@ -21,16 +15,16 @@ export default class Container {
 
   bindScope<T>(
     serviceIdentifier: interfaces.ServiceIdentifier<T>,
-    scope: ScopeType = ScopeTypes.Singleton,
+    scope: ScopeType = Singleton,
   ): interfaces.BindingWhenOnSyntax<T> {
     const binding = this.bind<T>(serviceIdentifier).toSelf()
     switch (scope) {
       default:
-      case ScopeTypes.Singleton:
+      case Singleton:
         return binding.inSingletonScope()
-      case ScopeTypes.Transient:
+      case Transient:
         return binding.inTransientScope()
-      case ScopeTypes.Request:
+      case Request:
         return binding.inRequestScope()
     }
   }
