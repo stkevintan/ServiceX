@@ -48,6 +48,5 @@ export function useServiceSelector<M extends Service<any>, F>(
     },
     [subscriptionRef],
   )
-
   return state as any
 }

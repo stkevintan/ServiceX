@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs'
 import { Store } from './store'
-import { ActionOfService, ActionMethodOfService } from './types'
+import { ActionOfService, ActionMethodOfService, ConditionPartial } from './types'
 import 'reflect-metadata'
 import { once, mapValues } from './utils/helpers'
 import { getEffectActionFactories, getOriginalFunctions } from './utils'
@@ -55,6 +55,18 @@ export abstract class Service<State> {
   // TODO: set this to extract loading State logical
   // public loading: { [key in keyof State]?: boolean } = {}
 
+  setState<M extends Service<State>, T extends boolean>(
+    this: M,
+    patchState: ConditionPartial<T, M extends Service<infer S> ? S : never>,
+    replace?: T,
+  ): void {
+    if (replace === true) {
+      this.store.state.setState(patchState as State)
+    }
+    const state = this.getState()
+    this.store.state.setState(Object.assign({}, state, patchState))
+  }
+
   getState<M extends Service<State>>(this: M): M extends Service<infer S> ? Readonly<S> : never {
     return this.store.state.getState() as any
   }
@@ -68,6 +80,10 @@ export abstract class Service<State> {
   getActions: <M extends Service<State>>(
     this: M,
   ) => M extends Service<infer S> ? ActionOfService<M, S> : never = once(() => {
+    // if (!Reflect.hasMetadata(StoreSymbol, this)) {
+    //   this.initStore()
+    //   // throw new Error('Error: store is not init')
+    // }
     return getEffectActionFactories(this) as any
   })
 

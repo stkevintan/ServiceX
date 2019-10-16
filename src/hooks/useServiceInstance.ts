@@ -1,7 +1,8 @@
 import { Service } from '../service'
-import { useEffect, useMemo } from 'react'
+import { useEffect } from 'react'
 import { useServiceSelector } from './useServiceSelector'
 import { ServiceResult } from './types'
+import { useDefault } from './useDefault'
 
 export interface UseServiceInstanceOptions {
   destroyOnUnmount?: boolean
@@ -14,29 +15,14 @@ export function useServiceInstance<M extends Service<any>>(
 
 export function useServiceInstance<M extends Service<any>, F>(
   service: M,
-  selector: (state: M extends Service<infer S> ? Readonly<S> : never) => F,
+  selector?: (state: M extends Service<infer S> ? Readonly<S> : never) => F,
   options?: UseServiceInstanceOptions,
 ): M extends Service<infer S> ? ServiceResult<M, S, typeof selector> : never
 
 export function useServiceInstance<M extends Service<any>>(service: M, ...args: any) {
-  const [selector, options] = useMemo(() => {
-    let options = {
-      destroyOnUnmount: false,
-    }
-    let selector: any = undefined
-    if (args.length === 1) {
-      if (typeof args[0] === 'function') {
-        selector = args[0]
-      } else {
-        options = { ...options, ...args[0] }
-      }
-    } else if (args.length === 2) {
-      selector = args[0]
-      options = { ...options, ...args[1] }
-    }
-    return [selector, options]
-  }, [args])
-
+  const [selector, options] = useDefault(args, {
+    destroyOnUnmount: false,
+  })
   const state = useServiceSelector(service, selector)
   useEffect(
     () => () => {

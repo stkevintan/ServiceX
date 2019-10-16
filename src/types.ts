@@ -136,3 +136,5 @@ export type OriginalDefineActions = ObjectOf<{
 export type TriggerActions = ObjectOf<ActionMethod<any>>
 
 export type EffectActionFactories = ObjectOf<(params: any) => EffectAction>
+
+export type ConditionPartial<C, S> = C extends true ? S : Partial<S>

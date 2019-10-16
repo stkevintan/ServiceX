@@ -10,28 +10,19 @@ import {
   Effect,
   EffectAction,
   DefineAction,
-  useServiceInstance,
   Inject,
 } from '../../src'
-import { Observable, of, from } from 'rxjs'
-import {
-  withLatestFrom,
-  map,
-  catchError,
-  repeatWhen,
-  switchMap,
-  startWith,
-  mergeMap,
-} from 'rxjs/operators'
+import { Observable, of } from 'rxjs'
+import { withLatestFrom, map, catchError, repeatWhen } from 'rxjs/operators'
+import { CompA } from './CompA'
+import { CompB } from './CompB'
 
 interface State {
   count: number
-  data?: any
-  loading: boolean
 }
 
 @Injectable()
-class OtherService extends Service<{ count: number }> {
+class OtherService extends Service<State> {
   defaultState = {
     count: 1,
   }
@@ -42,7 +33,6 @@ class OtherService extends Service<{ count: number }> {
 class CountService extends Service<State> {
   defaultState = {
     count: 0,
-    loading: false,
   }
 
   constructor(public other2: OtherService) {
@@ -54,10 +44,6 @@ class CountService extends Service<State> {
   @DefineAction()
   retry$!: Observable<void>
 
-  @Reducer()
-  saveState(state: State, payload: Partial<State>): State {
-    return { ...state, ...payload }
-  }
   @Reducer()
   setCount(state: State, count: number) {
     return { ...state, count: count }
@@ -86,36 +72,23 @@ class CountService extends Service<State> {
       repeatWhen(() => this.retry$),
     )
   }
-  @Effect()
-  fetch(trigger$: Observable<void>): Observable<EffectAction> {
-    return trigger$.pipe(
-      switchMap(() => {
-        return from(
-          fetch('https://yapi.bytedance.net/mock/844/xztech/blog/v1/posts/').then((data) =>
-            data.json(),
-          ),
-        ).pipe(
-          startWith(() => this.getActions().saveState({ loading: true })),
-          map((data) => this.getActions().saveState({ loading: false, data })),
-        )
-      }),
-    )
-  }
 }
 
 const Count: React.FC<{}> = () => {
-  const [state, actions, service] = useService(CountService)
-  const [state2] = useServiceInstance(service.other)
-  const [state3] = useServiceInstance(service.other2)
+  const [state, actions] = useService(CountService)
   return (
-    <div className="container">
-      <span className="count">
-        {state.count},{state2.count}, {state3.count}
-      </span>
+    <div>
+      <div className="container">
+        <span className="count">Main: {state.count}</span>
+        <div>
+          <button onClick={() => actions.add(1)}>Add one</button>
+          <button onClick={() => actions.subtract(1)}>Subtract one</button>
+          <button onClick={() => actions.reset()}>Reset</button>
+        </div>
+      </div>
       <div>
-        <button onClick={() => actions.add(1)}>Add one</button>
-        <button onClick={() => actions.subtract(1)}>Subtract one</button>
-        <button onClick={() => actions.reset()}>Reset</button>
+        <CompA />
+        <CompB />
       </div>
     </div>
   )

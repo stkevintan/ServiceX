@@ -1,10 +1,12 @@
 import { container, ScopeType } from '../ioc'
-import { useMemo } from 'react'
+import { useMemo, useEffect, useContext } from 'react'
 import { Service } from '../service'
 import { ConstructorOf } from '../types'
 import { useServiceInstance } from './useServiceInstance'
 import { ServiceResultWithSelf } from './types'
 import { Transient, Singleton, Request } from '../symbols'
+import { useDefault } from './useDefault'
+import { context } from '../utils'
 
 export interface UseServiceOptions {
   scope?: ScopeType
@@ -17,7 +19,7 @@ export function useService<M extends Service<any>>(
 
 export function useService<M extends Service<any>, F>(
   serviceConstructor: ConstructorOf<M>,
-  selector: (state: M extends Service<infer SS> ? Readonly<SS> : never) => F,
+  selector?: (state: M extends Service<infer SS> ? Readonly<SS> : never) => F,
   options?: UseServiceOptions,
 ): M extends Service<infer SS> ? ServiceResultWithSelf<M, SS, typeof selector> : never
 
@@ -25,26 +27,31 @@ export function useService<M extends Service<any>>(
   serviceIdentifier: ConstructorOf<M>,
   ...args: any
 ) {
-  const [selector, options] = useMemo(() => {
-    let options = {
-      scope: Singleton,
-    }
-    let selector: any
-    if (args.length === 1) {
-      if (typeof args[0] === 'function') {
-        selector = args[0]
-      } else {
-        options = { ...options, ...args[0] }
-      }
-    } else if (args.length === 2) {
-      selector = args[0]
-      options = { ...options, ...args[1] }
-    }
-    return [selector, options]
-  }, [args])
+  const [selector, options] = useDefault(args, {
+    scope: Singleton,
+    resetOnUnmount: false,
+  })
+
+  // const map = useContext(context)
+
   const service = useMemo(() => {
-    return container.resolveInScope<M>(serviceIdentifier, options.scope!)
+    // if (map.has(serviceIdentifier)) {
+    //   const instance = map.get(serviceIdentifier)
+    //   return instance!
+    // }
+    // const instance = container.resolveInScope<M>(serviceIdentifier, options.scope!)
+    // map.set(serviceIdentifier, instance)
+    // return instance
+    return container.resolveInScope(serviceIdentifier, options.scope!)
   }, [options.scope, serviceIdentifier])
+
+  useEffect(() => {
+    // singleton
+    if (options.scope === Singleton && options.resetOnUnmount) {
+      return () => service.setState(service.defaultState, true)
+    }
+    return undefined
+  }, [options.resetOnUnmount, options.scope, service])
 
   const serviceInstanceOptions = useMemo(
     () => ({

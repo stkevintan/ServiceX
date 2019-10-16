@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/explicit-member-accessibility */
-import { Service, Injectable, ImmerReducer, Scope, ScopeTypes, Inject } from '../../src'
+import { Service, Injectable, ImmerReducer, Scope, Inject, Transient } from '../../src'
 
 import { Engine, LowEngineService, MedianEngineService, HighEngineService } from './engine.service'
 
@@ -15,12 +15,12 @@ export class CarService extends Service<CarState> {
 
   // define the scope implictly
   @Inject(MedianEngineService)
-  @Scope(ScopeTypes.Transient)
+  @Scope(Transient)
   public engine2!: Service<Engine>
 
   constructor(
     @Inject(HighEngineService)
-    @Scope(ScopeTypes.Transient)
+    @Scope(Transient)
     public engine3: Service<Engine>,
   ) {
     super()
