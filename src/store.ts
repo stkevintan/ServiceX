@@ -46,13 +46,60 @@ export class Store<State> {
 
   subscription = new Subscription()
 
+  private effectSubs: Record<string, Subscription> = {}
+
+  private effects: Record<string, Subject<any>> = {}
+
+  initEffects = () => {
+    for (const actionName of Object.keys(this.config.effects)) {
+      // if exist subscription
+      if (this.effects[actionName]) continue
+      this.effects[actionName] = new Subject<any>()
+      this.effectSubs[actionName] = this.config.effects[actionName](
+        this.effects[actionName],
+        this.state.state$,
+      )
+        .pipe(
+          map(
+            (effectAction): Action<State> => {
+              return {
+                effectAction,
+                originalActionName: actionName,
+              }
+            },
+          ),
+          catchRxError(),
+        )
+        .subscribe((action) => {
+          this.log(action)
+          this.handleAction(action)
+        })
+    }
+  }
+
+  destroyEffects = () => {
+    for (const actionName of Object.keys(this.config.effects)) {
+      if (this.effects[actionName]) {
+        this.effects[actionName].complete()
+      }
+      if (this.effectSubs[actionName]) {
+        this.effectSubs[actionName].unsubscribe()
+      }
+      this.effectSubs = {}
+      this.effects = {}
+    }
+  }
+
   constructor(private readonly config: Readonly<Config<State>>) {
     this.state = new BasicState<State>(config.defaultState)
-
-    const [effectActions$, effectActions] = setupEffectActions(
-      this.config.effects,
-      this.state.state$,
-    )
+    const effectActions: TriggerActions = {}
+    for (const actionName of Object.keys(this.config.effects)) {
+      effectActions[actionName] = (payload: any) => {
+        if (this.effects[actionName]) {
+          this.effects[actionName].next(payload)
+        }
+      }
+    }
 
     const [reducerActions$, reducerActions] = setupReducerActions(
       this.config.reducers,
@@ -72,13 +119,6 @@ export class Store<State> {
     }
 
     this.subscription.add(
-      effectActions$.subscribe((action) => {
-        this.log(action)
-        this.handleAction(action)
-      }),
-    )
-
-    this.subscription.add(
       reducerActions$.subscribe((action) => {
         this.log(action)
         this.handleAction(action)
@@ -95,6 +135,7 @@ export class Store<State> {
 
   destroy() {
     this.subscription.unsubscribe()
+    this.destroyEffects()
     this.triggerActions = {}
   }
 
@@ -127,39 +168,39 @@ export class Store<State> {
   }
 }
 
-function setupEffectActions<State>(
-  effectActions: OriginalEffectActions<State>,
-  state$: Observable<State>,
-): [Observable<Action<State>>, TriggerActions] {
-  const actions: TriggerActions = {}
-  const effects: Observable<Action<State>>[] = []
+// function setupEffectActions<State>(
+//   effectActions: OriginalEffectActions<State>,
+//   state$: Observable<State>,
+// ): [Observable<Action<State>>, TriggerActions] {
+//   const actions: TriggerActions = {}
+//   const effects: Observable<Action<State>>[] = []
 
-  Object.keys(effectActions).forEach((actionName) => {
-    const payload$ = new Subject<any>()
-    actions[actionName] = (payload: any) => {
-      payload$.next(payload)
-    }
+//   Object.keys(effectActions).forEach((actionName) => {
+//     const payload$ = new Subject<any>()
+//     actions[actionName] = (payload: any) => {
+//       payload$.next(payload)
+//     }
 
-    //FIXME: how to avoid this recuring boom?
-    const effect$: Observable<EffectAction> = effectActions[actionName](payload$, state$)
+//     //FIXME: how to avoid this recuring boom?
+//     const effect$: Observable<EffectAction> = effectActions[actionName](payload$, state$)
 
-    effects.push(
-      effect$.pipe(
-        map(
-          (effectAction): Action<State> => {
-            return {
-              effectAction,
-              originalActionName: actionName,
-            }
-          },
-        ),
-        catchRxError(),
-      ),
-    )
-  })
+//     effects.push(
+//       effect$.pipe(
+//         map(
+//           (effectAction): Action<State> => {
+//             return {
+//               effectAction,
+//               originalActionName: actionName,
+//             }
+//           },
+//         ),
+//         catchRxError(),
+//       ),
+//     )
+//   })
 
-  return [merge(...effects), actions]
-}
+//   return [merge(...effects), actions]
+// }
 
 function setupReducerActions<State>(
   reducerActions: OriginalReducerActions<State>,

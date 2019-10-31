@@ -5,7 +5,6 @@ import { mapValues } from './utils/helpers'
 import { getEffectActionFactories, getOriginalFunctions } from './utils'
 import { injectable, postConstruct } from 'inversify'
 import { StoreSymbol } from './symbols'
-import { filter } from 'rxjs/operators'
 
 @injectable()
 export abstract class Service<State> {
@@ -24,20 +23,12 @@ export abstract class Service<State> {
     }
   }
 
-  private active = true
-
   private get store(): Store<State> {
     if (!Reflect.hasMetadata(StoreSymbol, this)) {
       throw new Error(`Store is destroyed or not created at now, ${this.constructor.name}`)
-      // this.initStore()
     }
     const store = Reflect.getMetadata(StoreSymbol, this)
 
-    // if (store === null) {
-    //   throw new Error(
-    //     `Error: store loop created, check the Service ${this.constructor.name} and its effects!`,
-    //   )
-    // }
     return store
   }
 
@@ -47,39 +38,25 @@ export abstract class Service<State> {
 
     Object.assign(this, mapValues(defineActions, ({ observable }) => observable))
 
-    this.active = true
-
-    Object.entries(this).forEach(([key, value]) => {
-      if (value instanceof Service) {
-        //prevent all the injected state$, when current service is inactive
-        ;(this as any)[key] = {
-          ...value,
-          getState$: () => value.getState$().pipe(filter(() => this.active)),
-        }
-      }
+    const store = new Store({
+      nameForLog: this.constructor.name,
+      defaultState: this.defaultState,
+      effects,
+      reducers,
+      immerReducers,
+      defineActions,
     })
-
-    // Reflect.defineMetadata(StoreSymbol, null, this)
-    Reflect.defineMetadata(
-      StoreSymbol,
-      new Store({
-        nameForLog: this.constructor.name,
-        defaultState: this.defaultState,
-        effects,
-        reducers,
-        immerReducers,
-        defineActions,
-      }),
-      this,
-    )
+    Reflect.defineMetadata(StoreSymbol, store, this)
+    // remember to enable effects
+    this.$awake()
   }
 
   $sleep() {
-    this.active = false
+    this.store.destroyEffects()
   }
 
   $awake() {
-    this.active = true
+    this.store.initEffects()
   }
 
   // TODO: set this to extract loading State logical
@@ -98,7 +75,7 @@ export abstract class Service<State> {
   }
 
   getState$() {
-    return this.store.state.state$.pipe(filter(() => this.active))
+    return this.store.state.state$
   }
 
   // a: <M extends Service<State>>(
