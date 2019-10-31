@@ -15,7 +15,7 @@ export default class Container {
 
   bindScope<T>(
     serviceIdentifier: interfaces.ServiceIdentifier<T>,
-    scope: ScopeType = Singleton,
+    scope: ScopeType = Transient,
   ): interfaces.BindingWhenOnSyntax<T> {
     const binding = this.bind<T>(serviceIdentifier).toSelf()
     switch (scope) {

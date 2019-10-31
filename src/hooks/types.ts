@@ -1,13 +1,18 @@
 import { Service } from '../service'
 import { ActionMethodOfService } from '../types'
 
-export type ServiceResult<M extends Service<S>, S, P = undefined> = [
-  Readonly<P extends undefined ? S : P extends (...args: any) => infer R ? R : never>,
-  ActionMethodOfService<M, S>,
-]
+// export type ServiceResult<M extends Service<S>, S, P = undefined> = [
+//   Readonly<P extends undefined ? S : P extends (...args: any) => infer R ? R : never>,
+//   ActionMethodOfService<M, S>,
+// ]
 
-export type ServiceResultWithSelf<M extends Service<S>, S, P = undefined> = [
-  Readonly<P extends undefined ? S : P extends (...args: any) => infer R ? R : never>,
+// export type ServiceResultWithSelf<M extends Service<S>, S, P = undefined> = [
+//   Readonly<P extends undefined ? S : P extends (...args: any) => infer R ? R : never>,
+//   ActionMethodOfService<M, S>,
+//   M,
+// ]
+
+export type ServiceResult<M extends Service<S>, S, P> = [
+  Readonly<P extends undefined ? S : P>,
   ActionMethodOfService<M, S>,
-  M,
 ]

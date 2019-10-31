@@ -1,7 +1,6 @@
 import React from 'react'
 import './index.less'
 import {
-  useService,
   Injectable,
   Service,
   Reducer,
@@ -9,6 +8,7 @@ import {
   Effect,
   EffectAction,
   DefineAction,
+  useConnect,
 } from '../../src'
 import { Observable, of } from 'rxjs'
 import { withLatestFrom, map, catchError, repeatWhen } from 'rxjs/operators'
@@ -58,8 +58,9 @@ class CountService extends Service<State> {
 }
 
 export const CompA: React.FC<{}> = () => {
+  const [useService, render] = useConnect()
   const [state, actions] = useService(CountService)
-  return (
+  return render(
     <div className="container">
       <span className="count">Component A: {state.count}</span>
       <div>
@@ -67,7 +68,7 @@ export const CompA: React.FC<{}> = () => {
         <button onClick={() => actions.subtract(1)}>Subtract one</button>
         <button onClick={() => actions.reset()}>Reset</button>
       </div>
-    </div>
+    </div>,
   )
 }
 

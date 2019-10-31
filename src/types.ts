@@ -14,7 +14,7 @@ type IsUnknown<T> = any extends T ? IfAny<T, false, true> : false
 type IsVoid<T> = IsAny<T> extends true ? false : [T] extends [void] ? true : false
 
 // using class type to avoid conflict with user defined params
-class ArgumentsType<_Arguments extends any[]> {}
+export class ArgumentsType<_Arguments extends any[]> {}
 
 export type ActionMethod<
   T extends ArgumentsType<any[]> | never,

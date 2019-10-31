@@ -2,28 +2,18 @@ import { Service } from '../service'
 import { useEffect } from 'react'
 import { useServiceSelector } from './useServiceSelector'
 import { ServiceResult } from './types'
-import { useDefault } from './useDefault'
 
-export interface UseServiceInstanceOptions {
+export interface UseServiceInstanceOptions<S, F> {
   destroyOnUnmount?: boolean
+  selector?: (state: S) => F
 }
 
-export function useServiceInstance<M extends Service<any>>(
+export function useServiceInstance<M extends Service<any>, S, F = undefined>(
   service: M,
-  options?: UseServiceInstanceOptions,
-): M extends Service<infer S> ? ServiceResult<M, S> : never
-
-export function useServiceInstance<M extends Service<any>, F>(
-  service: M,
-  selector?: (state: M extends Service<infer S> ? Readonly<S> : never) => F,
-  options?: UseServiceInstanceOptions,
-): M extends Service<infer S> ? ServiceResult<M, S, typeof selector> : never
-
-export function useServiceInstance<M extends Service<any>>(service: M, ...args: any) {
-  const [selector, options] = useDefault(args, {
-    destroyOnUnmount: false,
-  })
-  const state = useServiceSelector(service, selector)
+  options: UseServiceInstanceOptions<M extends Service<infer SS> ? SS : S, F> = {},
+): ServiceResult<M, M extends Service<infer SS> ? SS : S, F> {
+  if (service === undefined) return [] as any
+  const state = useServiceSelector(service, options.selector as any)
   useEffect(
     () => () => {
       if (options.destroyOnUnmount) {
@@ -33,5 +23,5 @@ export function useServiceInstance<M extends Service<any>>(service: M, ...args: 
     [options.destroyOnUnmount, service],
   )
 
-  return [state, service.getActionMethods()]
+  return [state, service.getActionMethods()] as any
 }
