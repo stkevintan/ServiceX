@@ -85,9 +85,9 @@ export class Store<State> {
       if (this.effectSubs[actionName]) {
         this.effectSubs[actionName].unsubscribe()
       }
-      this.effectSubs = {}
-      this.effects = {}
     }
+    this.effectSubs = {}
+    this.effects = {}
   }
 
   constructor(private readonly config: Readonly<Config<State>>) {
