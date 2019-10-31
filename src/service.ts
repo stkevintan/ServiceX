@@ -1,15 +1,21 @@
-import { Observable } from 'rxjs'
 import { Store } from './store'
 import { ActionOfService, ActionMethodOfService, ConditionPartial } from './types'
 import 'reflect-metadata'
-import { once, mapValues } from './utils/helpers'
+import { mapValues } from './utils/helpers'
 import { getEffectActionFactories, getOriginalFunctions } from './utils'
 import { injectable, postConstruct } from 'inversify'
 import { StoreSymbol } from './symbols'
+import { filter } from 'rxjs/operators'
 
 @injectable()
 export abstract class Service<State> {
   abstract defaultState: State
+
+  actions<M extends Service<any>>(
+    this: M,
+  ): M extends Service<infer SS> ? ActionOfService<M, SS> : never {
+    return getEffectActionFactories(this)
+  }
 
   destroy() {
     if (this.store) {
@@ -18,27 +24,42 @@ export abstract class Service<State> {
     }
   }
 
+  private active = true
+
   private get store(): Store<State> {
     if (!Reflect.hasMetadata(StoreSymbol, this)) {
-      this.initStore()
-      // throw new Error('Error: store is not init')
+      throw new Error(`Store is destroyed or not created at now, ${this.constructor.name}`)
+      // this.initStore()
     }
     const store = Reflect.getMetadata(StoreSymbol, this)
 
-    if (store === null) {
-      throw new Error(
-        `Error: store loop created, check the Service ${this.constructor.name} and its effects!`,
-      )
-    }
+    // if (store === null) {
+    //   throw new Error(
+    //     `Error: store loop created, check the Service ${this.constructor.name} and its effects!`,
+    //   )
+    // }
     return store
   }
 
   @postConstruct()
-  initStore() {
+  $initStore() {
     const { effects, reducers, immerReducers, defineActions } = getOriginalFunctions(this)
 
     Object.assign(this, mapValues(defineActions, ({ observable }) => observable))
-    Reflect.defineMetadata(StoreSymbol, null, this)
+
+    this.active = true
+
+    Object.entries(this).forEach(([key, value]) => {
+      if (value instanceof Service) {
+        //prevent all the injected state$, when current service is inactive
+        ;(this as any)[key] = {
+          ...value,
+          getState$: () => value.getState$().pipe(filter(() => this.active)),
+        }
+      }
+    })
+
+    // Reflect.defineMetadata(StoreSymbol, null, this)
     Reflect.defineMetadata(
       StoreSymbol,
       new Store({
@@ -52,14 +73,19 @@ export abstract class Service<State> {
       this,
     )
   }
+
+  $sleep() {
+    this.active = false
+  }
+
+  $awake() {
+    this.active = true
+  }
+
   // TODO: set this to extract loading State logical
   // public loading: { [key in keyof State]?: boolean } = {}
 
-  setState<M extends Service<State>, T extends boolean>(
-    this: M,
-    patchState: ConditionPartial<T, M extends Service<infer S> ? S : never>,
-    replace?: T,
-  ): void {
+  $setState<T extends boolean>(patchState: ConditionPartial<T, State>, replace?: T): void {
     if (replace === true) {
       this.store.state.setState(patchState as State)
     }
@@ -67,29 +93,25 @@ export abstract class Service<State> {
     this.store.state.setState(Object.assign({}, state, patchState))
   }
 
-  getState<M extends Service<State>>(this: M): M extends Service<infer S> ? Readonly<S> : never {
-    return this.store.state.getState() as any
+  getState() {
+    return this.store.state.getState()
   }
 
-  getState$<M extends Service<State>>(
-    this: M,
-  ): M extends Service<infer S> ? Observable<Readonly<S>> : never {
-    return this.store.state.state$ as any
+  getState$() {
+    return this.store.state.state$.pipe(filter(() => this.active))
   }
 
-  getActions: <M extends Service<State>>(
-    this: M,
-  ) => M extends Service<infer S> ? ActionOfService<M, S> : never = once(() => {
-    // if (!Reflect.hasMetadata(StoreSymbol, this)) {
-    //   this.initStore()
-    //   // throw new Error('Error: store is not init')
-    // }
-    return getEffectActionFactories(this) as any
-  })
+  // a: <M extends Service<State>>(
+  //   this: M,
+  // ) => M extends Service<infer S> ? ActionOfService<M, S> : never = once(() => {
+  //   // if (!Reflect.hasMetadata(StoreSymbol, this)) {
+  //   //   this.initStore()
+  //   //   // throw new Error('Error: store is not init')
+  //   // }
+  //   return getEffectActionFactories(this) as any
+  // })
 
-  getActionMethods<M extends Service<State>>(
-    this: M,
-  ): M extends Service<infer S> ? ActionMethodOfService<M, S> : never {
+  getActions<M extends Service<State>>(this: M): ActionMethodOfService<M, State> {
     return this.store.triggerActions as any
   }
 }

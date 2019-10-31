@@ -1,6 +1,6 @@
 import {
   Service,
-  ScopeTypes,
+  Transient,
   Injectable,
   Reducer,
   container,
@@ -26,8 +26,8 @@ describe('Service specs:', () => {
   let actions: ActionMethodOfService<CountModel, CountState>
 
   beforeEach(() => {
-    countModel = container.resolveInScope(CountModel, ScopeTypes.Transient)
-    actions = countModel.getActionMethods()
+    countModel = container.resolveInScope(CountModel, Transient)
+    actions = countModel.getActions()
   })
 
   it('getState', () => {

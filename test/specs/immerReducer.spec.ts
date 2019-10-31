@@ -6,7 +6,7 @@ import {
   Injectable,
   ActionMethodOfService,
   container,
-  ScopeTypes,
+  Transient,
 } from '../../src'
 
 interface TipsState {
@@ -40,8 +40,8 @@ describe('ImmerReducer spec:', () => {
   let actions: ActionMethodOfService<Tips, TipsState>
 
   beforeEach(() => {
-    tips = container.resolveInScope(Tips, ScopeTypes.Transient)
-    actions = tips.getActionMethods()
+    tips = container.resolveInScope(Tips, Transient)
+    actions = tips.getActions()
   })
 
   it('with payload', () => {

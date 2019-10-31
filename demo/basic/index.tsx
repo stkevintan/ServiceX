@@ -14,15 +14,7 @@ import {
   Inject,
 } from '../../src'
 import { Observable, of, from } from 'rxjs'
-import {
-  withLatestFrom,
-  map,
-  catchError,
-  repeatWhen,
-  switchMap,
-  startWith,
-  mergeMap,
-} from 'rxjs/operators'
+import { withLatestFrom, map, catchError, repeatWhen, switchMap, startWith } from 'rxjs/operators'
 
 interface State {
   count: number
@@ -34,6 +26,11 @@ interface State {
 class OtherService extends Service<{ count: number }> {
   defaultState = {
     count: 1,
+  }
+
+  @Reducer()
+  setCount(_state: { count: number }, x: number) {
+    return { count: x }
   }
 }
 
@@ -77,11 +74,11 @@ class CountService extends Service<State> {
     return count$.pipe(
       withLatestFrom(state$),
       map(([count, state]) => {
-        return this.getActions().setCount(state.count - count)
+        return this.actions().setCount(state.count - count)
       }),
       catchError((err) => {
         console.error(err)
-        return of(this.getActions().reset())
+        return of(this.actions().reset())
       }),
       repeatWhen(() => this.retry$),
     )
@@ -95,8 +92,8 @@ class CountService extends Service<State> {
             data.json(),
           ),
         ).pipe(
-          startWith(() => this.getActions().saveState({ loading: true })),
-          map((data) => this.getActions().saveState({ loading: false, data })),
+          startWith(() => this.actions().saveState({ loading: true })),
+          map((data) => this.actions().saveState({ loading: false, data })),
         )
       }),
     )

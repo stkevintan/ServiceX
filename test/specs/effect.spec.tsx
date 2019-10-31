@@ -8,9 +8,9 @@ import {
   Reducer,
   Injectable,
   container,
-  ScopeTypes,
   Inject,
   Scope,
+  Transient,
 } from '../../src'
 
 interface TipsState {
@@ -30,7 +30,7 @@ class Tips extends Service<TipsState> {
 
   @Effect()
   showTipsWithEffectAction(tips$: Observable<string>): Observable<EffectAction> {
-    return tips$.pipe(map((tips) => this.getActions().showTipsWithReducer(tips)))
+    return tips$.pipe(map((tips) => this.actions().showTipsWithReducer(tips)))
   }
 }
 
@@ -44,7 +44,7 @@ class Count extends Service<CountState> {
     count: 0,
   }
 
-  @Inject(Tips) @Scope(ScopeTypes.Transient) readonly tips!: Tips
+  @Inject(Tips) @Scope(Transient) readonly tips!: Tips
 
   @Reducer()
   setCount(state: CountState, count: number): CountState {
@@ -57,8 +57,8 @@ class Count extends Service<CountState> {
       withLatestFrom(state$),
       mergeMap(([addCount, state]) =>
         of(
-          this.getActions().setCount(state.count + addCount),
-          this.tips.getActions().showTipsWithReducer(`add ${addCount}`),
+          this.actions().setCount(state.count + addCount),
+          this.tips.actions().showTipsWithReducer(`add ${addCount}`),
         ),
       ),
     )
@@ -70,8 +70,8 @@ class Count extends Service<CountState> {
       withLatestFrom(state$),
       mergeMap(([subCount, state]) =>
         of(
-          this.getActions().setCount(state.count - subCount),
-          this.tips.getActions().showTipsWithEffectAction(`minus ${subCount}`),
+          this.actions().setCount(state.count - subCount),
+          this.tips.actions().showTipsWithEffectAction(`minus ${subCount}`),
         ),
       ),
     )
@@ -88,8 +88,8 @@ class Count extends Service<CountState> {
 }
 
 describe('Effect spec:', () => {
-  const count = container.resolveInScope(Count, ScopeTypes.Transient)
-  const countActions = count.getActionMethods()
+  const count = container.resolveInScope(Count, Transient)
+  const countActions = count.getActions()
   const tips = count.tips
   const getCount = () => count.getState().count
   const getTips = () => tips.getState().tips

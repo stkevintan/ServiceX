@@ -1,6 +1,6 @@
 import {
   Service,
-  ScopeTypes,
+  Transient,
   Injectable,
   Reducer,
   container,
@@ -34,18 +34,18 @@ class CountModel extends Service<State> {
   defaultState = { count: 0 }
 
   // type 1
-  @Inject(OtherModel) @Scope(ScopeTypes.Transient) other!: OtherModel
+  @Inject(OtherModel) @Scope(Transient) other!: OtherModel
 
   // type 2
   constructor(
     public other1: OtherModel,
 
-    @Scope(ScopeTypes.Transient) public other2: OtherModel,
+    @Scope(Transient) public other2: OtherModel,
 
-    @Inject(OtherModel) @Scope(ScopeTypes.Transient) public other3: OtherModel,
+    @Inject(OtherModel) @Scope(Transient) public other3: OtherModel,
 
     @Inject(new LazyServiceIdentifer(() => OtherModel))
-    @Scope(ScopeTypes.Transient)
+    @Scope(Transient)
     public other4: OtherModel,
   ) {
     super()
@@ -63,7 +63,7 @@ class CountModel extends Service<State> {
 
   @Effect()
   proxySubtract(payload$: Observable<number>): Observable<EffectAction> {
-    return payload$.pipe(map((n) => this.other2.getActions().subtract(n)))
+    return payload$.pipe(map((n) => this.other2.actions().subtract(n)))
   }
 }
 
@@ -72,8 +72,8 @@ describe('Inject specs:', () => {
   let actions: ActionMethodOfService<CountModel, State>
 
   beforeEach(() => {
-    countModel = container.resolveInScope(CountModel, ScopeTypes.Transient)
-    actions = countModel.getActionMethods()
+    countModel = container.resolveInScope(CountModel, Transient)
+    actions = countModel.getActions()
   })
 
   it('getState', () => {
@@ -93,9 +93,9 @@ describe('Inject specs:', () => {
   })
 
   it('should scope decorator default to Singleton', () => {
-    countModel.other1.getActionMethods().subtract(1)
+    countModel.other1.getActions().subtract(1)
     container.unbind(CountModel)
-    countModel = container.resolveInScope(CountModel, ScopeTypes.Transient)
+    countModel = container.resolveInScope(CountModel, Transient)
     expect(countModel.other1.getState()).toEqual({ count: -2 })
   })
 

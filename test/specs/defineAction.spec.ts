@@ -8,8 +8,8 @@ import {
   EffectAction,
   Reducer,
   DefineAction,
-  ScopeTypes,
   container,
+  Transient,
 } from '../../src'
 
 interface CountState {
@@ -33,14 +33,14 @@ class Count extends Service<CountState> {
   @Effect()
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _(_: Observable<void>): Observable<EffectAction> {
-    return this.resetCountDown$.pipe(map((count) => this.getActions().setCount(count)))
+    return this.resetCountDown$.pipe(map((count) => this.actions().setCount(count)))
   }
 }
 
 describe('DefineAction spec:', () => {
   // const testModule = Test.createTestingModule().compile()
-  const count = container.resolveInScope<Count>(Count, ScopeTypes.Transient)
-  const countActions = count.getActionMethods()
+  const count = container.resolveInScope<Count>(Count, Transient)
+  const countActions = count.getActions()
   const getCount = () => count.getState().count
 
   it('should setup properly', () => {

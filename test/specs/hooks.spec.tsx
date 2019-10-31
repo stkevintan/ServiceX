@@ -10,7 +10,7 @@ import {
   Reducer,
   Injectable,
   useService,
-  ScopeTypes,
+  Transient,
   useAction,
   container,
   useInstanceAction,
@@ -48,7 +48,7 @@ class Count extends Service<State> {
   minus(count$: Observable<number>, state$: Observable<State>): Observable<EffectAction> {
     return count$.pipe(
       withLatestFrom(state$),
-      map(([subCount, state]) => this.getActions().setCount(state.count - subCount)),
+      map(([subCount, state]) => this.actions().setCount(state.count - subCount)),
     )
   }
 }
@@ -101,7 +101,7 @@ describe('Hooks spec:', () => {
     it('should only render once when update the state right during rendering', () => {
       const spy = jest.fn()
       const TestComponent = () => {
-        const [state, actions] = useService(Count, { scope: ScopeTypes.Transient })
+        const [state, actions] = useService(Count, { scope: Transient })
         const addOne = useCallback(() => actions.add(1), [actions])
 
         if (state.count % 2 === 0) {
@@ -134,7 +134,7 @@ describe('Hooks spec:', () => {
       const spy = jest.fn()
 
       const TestComponent = () => {
-        const [state, actions] = useService(Count, () => undefined, { scope: ScopeTypes.Transient })
+        const [state, actions] = useService(Count, () => undefined, { scope: Transient })
         expect(state).toBeUndefined()
         const addOne = useCallback(() => actions.add(1), [actions])
         spy()
@@ -154,7 +154,7 @@ describe('Hooks spec:', () => {
     })
     it('should not trigger re-render when using useAction', () => {
       const spy = jest.fn()
-      const count = container.resolveInScope(Count, ScopeTypes.Transient)
+      const count = container.resolveInScope(Count, Transient)
 
       const TestComponent = () => {
         const actions = useAction(Count)
@@ -272,14 +272,14 @@ describe('Hooks spec:', () => {
       let testRenderer: ReactTestRenderer
 
       beforeEach(() => {
-        testRenderer = create(<CountComponent scope={ScopeTypes.Transient} />)
+        testRenderer = create(<CountComponent scope={Transient} />)
 
         count = () => testRenderer.root.findByType('span').children[0]
         click = (action: CountAction) =>
           act(() => testRenderer.root.findByProps({ id: action }).props.onClick())
 
         // https://github.com/facebook/react/issues/14050 to trigger useEffect manually
-        testRenderer.update(<CountComponent scope={ScopeTypes.Transient} />)
+        testRenderer.update(<CountComponent scope={Transient} />)
       })
 
       it('Reducer action work properly', () => {

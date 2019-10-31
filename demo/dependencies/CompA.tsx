@@ -46,11 +46,11 @@ class CountService extends Service<State> {
     return count$.pipe(
       withLatestFrom(state$),
       map(([count, state]) => {
-        return this.getActions().setCount(state.count - count)
+        return this.actions().setCount(state.count - count)
       }),
       catchError((err) => {
         console.error(err)
-        return of(this.getActions().reset())
+        return of(this.actions().reset())
       }),
       repeatWhen(() => this.retry$),
     )

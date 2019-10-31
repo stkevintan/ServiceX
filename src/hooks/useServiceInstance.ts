@@ -8,16 +8,20 @@ export interface UseServiceInstanceOptions {
   destroyOnUnmount?: boolean
 }
 
-export function useServiceInstance<M extends Service<any>>(
-  service: M,
-  options?: UseServiceInstanceOptions,
-): M extends Service<infer S> ? ServiceResult<M, S> : never
+export function useServiceInstance<
+  M extends Service<any>,
+  S = M extends Service<infer SS> ? SS : never
+>(service: M, options?: UseServiceInstanceOptions): ServiceResult<M, S, S>
 
-export function useServiceInstance<M extends Service<any>, F>(
+export function useServiceInstance<
+  M extends Service<any>,
+  S = M extends Service<infer SS> ? SS : never,
+  F = S
+>(
   service: M,
   selector?: (state: M extends Service<infer S> ? Readonly<S> : never) => F,
   options?: UseServiceInstanceOptions,
-): M extends Service<infer S> ? ServiceResult<M, S, typeof selector> : never
+): ServiceResult<M, S, F>
 
 export function useServiceInstance<M extends Service<any>>(service: M, ...args: any) {
   const [selector, options] = useDefault(args, {
@@ -33,5 +37,5 @@ export function useServiceInstance<M extends Service<any>>(service: M, ...args: 
     [options.destroyOnUnmount, service],
   )
 
-  return [state, service.getActionMethods()]
+  return [state, service.getActions(), service]
 }

@@ -4,21 +4,16 @@ import { Subscription } from 'rxjs'
 import { map, distinctUntilChanged, skip } from 'rxjs/operators'
 import { shallowEqual } from '../utils'
 
-export type UseServiceSelectorResult<P, S> = P extends undefined
-  ? S
-  : P extends (...args: any) => infer R
-  ? R
-  : never
-
-export function useServiceSelector<M extends Service<any>, F>(
-  service: M,
-  selector?: (state: M extends Service<infer S> ? Readonly<S> : never) => F,
-): M extends Service<infer S> ? UseServiceSelectorResult<typeof selector, S> : never {
+export function useServiceSelector<
+  M extends Service<any>,
+  S = M extends Service<infer SS> ? SS : never,
+  F = S
+>(service: M, selector?: (state: Readonly<S>) => F): F {
   const serviceRef = useRef<Service<any> | null>(null)
   const skipCountRef = useRef(1)
   const subscriptionRef = useRef<Subscription | null>(null)
   const [state, setState] = useState(() =>
-    selector ? selector(service.getState() as any) : service.getState(),
+    selector ? selector(service.getState()) : service.getState(),
   )
   if (serviceRef.current !== service) {
     serviceRef.current = service
@@ -32,7 +27,7 @@ export function useServiceSelector<M extends Service<any>, F>(
         .getState$()
         .pipe(
           skip(skipCountRef.current),
-          map((state) => (selector ? selector(state as any) : state)),
+          map((state) => (selector ? selector(state) : state)),
           distinctUntilChanged(shallowEqual),
         )
         .subscribe(setState)
@@ -48,5 +43,5 @@ export function useServiceSelector<M extends Service<any>, F>(
     },
     [subscriptionRef],
   )
-  return state as any
+  return state
 }

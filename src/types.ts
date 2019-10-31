@@ -14,7 +14,7 @@ type IsUnknown<T> = any extends T ? IfAny<T, false, true> : false
 type IsVoid<T> = IsAny<T> extends true ? false : [T] extends [void] ? true : false
 
 // using class type to avoid conflict with user defined params
-class ArgumentsType<_Arguments extends any[]> {}
+export class ArgumentsType<_Arguments extends any[]> {}
 
 export type ActionMethod<
   T extends ArgumentsType<any[]> | never,
@@ -76,8 +76,8 @@ type UnpackPayload<F, S> = UnpackEffectPayload<F, S> extends never
     : UnpackReducerPayload<F, S>
   : UnpackEffectPayload<F, S>
 
-type PayloadMethodKeySet<M, S, SS extends keyof M = Exclude<keyof M, keyof Service<S>>> = {
-  [key in SS]: M[key] extends
+type PayloadMethodKeySet<M, S, K extends keyof M = Exclude<keyof M, keyof Service<S>>> = {
+  [key in K]: M[key] extends
     | (() => Observable<EffectAction>)
     | ((payload$: Observable<any>) => Observable<EffectAction>)
     | ((payload$: Observable<any>, state$: Observable<S>) => Observable<EffectAction>)
@@ -89,7 +89,7 @@ type PayloadMethodKeySet<M, S, SS extends keyof M = Exclude<keyof M, keyof Servi
     | Observable<any>
     ? key
     : never
-}[SS]
+}[K]
 
 export type ActionMethodOfService<M extends Service<S>, S> = Pick<
   { [key in keyof M]: ActionMethod<UnpackPayload<M[key], S>> },
