@@ -1,5 +1,5 @@
-import { merge, Observable, Subject, Subscription, NEVER } from 'rxjs'
-import { map, catchError } from 'rxjs/operators'
+import { merge, Observable, Subject, Subscription, NEVER, from } from 'rxjs'
+import { map, catchError, delayWhen } from 'rxjs/operators'
 import { mapValues } from './utils/helpers'
 import produce from 'immer'
 
@@ -60,6 +60,8 @@ export class Store<State> {
         this.state.state$,
       )
         .pipe(
+          // a promise delay
+          delayWhen(() => from(Promise.resolve())),
           map(
             (effectAction): Action<State> => {
               return {

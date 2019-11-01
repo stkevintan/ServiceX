@@ -33,7 +33,8 @@ export function useService<M extends Service<any>>(
 ) {
   const [selector, options] = useDefault(args, {
     scope: Singleton,
-    resetOnUnmount: true,
+    // do not make this params true default
+    resetOnUnmount: false,
   })
 
   const service: M = useMemo(() => {
