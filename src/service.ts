@@ -5,6 +5,7 @@ import { mapValues } from './utils/helpers'
 import { getEffectActionFactories, getOriginalFunctions } from './utils'
 import { injectable, postConstruct } from 'inversify'
 import { StoreSymbol } from './symbols'
+import { logStateAction } from './reduxDevtool'
 
 @injectable()
 export abstract class Service<State> {
@@ -19,7 +20,7 @@ export abstract class Service<State> {
   destroy() {
     if (this.store) {
       this.store.destroy()
-      Reflect.deleteMetadata(StoreSymbol, this)
+      // Reflect.deleteMetadata(StoreSymbol, this)
     }
   }
 
@@ -47,27 +48,40 @@ export abstract class Service<State> {
       defineActions,
     })
     Reflect.defineMetadata(StoreSymbol, store, this)
-    // remember to enable effects
-    this.$awake()
+    store.initEffects()
   }
 
-  $sleep() {
+  sleep() {
     this.store.destroyEffects()
   }
 
-  $awake() {
+  awake() {
     this.store.initEffects()
   }
 
   // TODO: set this to extract loading State logical
   // public loading: { [key in keyof State]?: boolean } = {}
 
-  $setState<T extends boolean>(patchState: ConditionPartial<T, State>, replace?: T): void {
-    if (replace === true) {
-      this.store.state.setState(patchState as State)
+  dispatch<T extends boolean = false>(
+    name: string,
+    params: {
+      payload: ConditionPartial<T, State>
+      replace?: T
+    },
+  ): void {
+    let nextState: State
+    if (params.replace === true) {
+      // this.store.state.setState(payload as State)
+      nextState = params.payload as State
+    } else {
+      nextState = { ...this.getState(), ...params.payload }
     }
-    const state = this.getState()
-    this.store.state.setState(Object.assign({}, state, patchState))
+    logStateAction(this.constructor.name, {
+      actionName: `@@dispatch(${name})`,
+      params,
+      state: nextState,
+    })
+    this.store.state.setState(nextState)
   }
 
   getState() {

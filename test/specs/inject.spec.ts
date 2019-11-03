@@ -11,7 +11,7 @@ import {
   Scope,
 } from '../../src'
 import { Observable } from 'rxjs'
-import { map } from 'rxjs/operators'
+import { map, skip, take } from 'rxjs/operators'
 import { LazyServiceIdentifer } from 'inversify'
 
 interface State {
@@ -99,11 +99,15 @@ describe('Inject specs:', () => {
     expect(countModel.other1.getState()).toEqual({ count: -2 })
   })
 
-  it('syncCount', () => {
-    expect(countModel.getState()).toEqual({ count: 0 })
+  it('should effect take effect asyncly', () => {
+    countModel.other2
+      .getState$()
+      .pipe(
+        skip(1),
+        take(1),
+      )
+      .subscribe((state) => expect(state).toEqual({ count: -2 }))
     actions.proxySubtract(1)
-    expect(countModel.other2.getState()).toEqual({ count: -2 })
-    actions.syncCount()
-    expect(countModel.getState()).toEqual({ count: -1 })
+    expect(countModel.other2.getState()).toEqual({ count: -1 })
   })
 })

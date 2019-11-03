@@ -46,36 +46,40 @@ export class Store<State> {
 
   subscription = new Subscription()
 
-  private effectSubs: Record<string, Subscription> = {}
+  private effectSub: Subscription | undefined
 
   private effects: Record<string, Subject<any>> = {}
 
   initEffects = () => {
+    if (this.effectSub) {
+      // re init
+      return
+    }
+    this.effectSub = new Subscription()
     for (const actionName of Object.keys(this.config.effects)) {
       // if exist subscription
       if (this.effects[actionName]) continue
       this.effects[actionName] = new Subject<any>()
-      this.effectSubs[actionName] = this.config.effects[actionName](
-        this.effects[actionName],
-        this.state.state$,
+      this.effectSub.add(
+        this.config.effects[actionName](this.effects[actionName], this.state.state$)
+          .pipe(
+            // a promise delay
+            delayWhen(() => from(Promise.resolve())),
+            map(
+              (effectAction): Action<State> => {
+                return {
+                  effectAction,
+                  originalActionName: actionName,
+                }
+              },
+            ),
+            catchRxError(),
+          )
+          .subscribe((action) => {
+            this.log(action)
+            this.handleAction(action)
+          }),
       )
-        .pipe(
-          // a promise delay
-          delayWhen(() => from(Promise.resolve())),
-          map(
-            (effectAction): Action<State> => {
-              return {
-                effectAction,
-                originalActionName: actionName,
-              }
-            },
-          ),
-          catchRxError(),
-        )
-        .subscribe((action) => {
-          this.log(action)
-          this.handleAction(action)
-        })
     }
   }
 
@@ -84,11 +88,9 @@ export class Store<State> {
       if (this.effects[actionName]) {
         this.effects[actionName].complete()
       }
-      if (this.effectSubs[actionName]) {
-        this.effectSubs[actionName].unsubscribe()
-      }
     }
-    this.effectSubs = {}
+    if (this.effectSub) this.effectSub.unsubscribe()
+    this.effectSub = undefined
     this.effects = {}
   }
 
@@ -169,40 +171,6 @@ export class Store<State> {
     }
   }
 }
-
-// function setupEffectActions<State>(
-//   effectActions: OriginalEffectActions<State>,
-//   state$: Observable<State>,
-// ): [Observable<Action<State>>, TriggerActions] {
-//   const actions: TriggerActions = {}
-//   const effects: Observable<Action<State>>[] = []
-
-//   Object.keys(effectActions).forEach((actionName) => {
-//     const payload$ = new Subject<any>()
-//     actions[actionName] = (payload: any) => {
-//       payload$.next(payload)
-//     }
-
-//     //FIXME: how to avoid this recuring boom?
-//     const effect$: Observable<EffectAction> = effectActions[actionName](payload$, state$)
-
-//     effects.push(
-//       effect$.pipe(
-//         map(
-//           (effectAction): Action<State> => {
-//             return {
-//               effectAction,
-//               originalActionName: actionName,
-//             }
-//           },
-//         ),
-//         catchRxError(),
-//       ),
-//     )
-//   })
-
-//   return [merge(...effects), actions]
-// }
 
 function setupReducerActions<State>(
   reducerActions: OriginalReducerActions<State>,

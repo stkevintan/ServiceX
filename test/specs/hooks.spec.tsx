@@ -17,6 +17,14 @@ import {
 } from '../../src'
 import { useCallback, useEffect } from 'react'
 
+const wait = (fn: (...args: any[]) => any) => Promise.resolve().then(() => fn())
+const waitMacro = (fn: (...args: any[]) => any) =>
+  new Promise((res) =>
+    setTimeout(() => {
+      fn()
+      res()
+    }),
+  )
 interface State {
   count: number
   start: number
@@ -78,9 +86,8 @@ describe('Hooks spec:', () => {
   describe('Default behavior', () => {
     const testRenderer = create(<CountComponent />)
     const count = () => testRenderer.root.findByType('span').children[0]
-    const click = (action: CountAction) =>
-      act(() => testRenderer.root.findByProps({ id: action }).props.onClick())
-
+    const click = async (action: CountAction) =>
+      await act(async () => testRenderer.root.findByProps({ id: action }).props.onClick())
     // https://github.com/facebook/react/issues/14050 to trigger useEffect manually
     testRenderer.update(<CountComponent />)
 
@@ -93,12 +100,12 @@ describe('Hooks spec:', () => {
       expect(count()).toBe('1')
     })
 
-    it('Effect action work properly', () => {
+    it('Effect action work properly', async () => {
       click(CountAction.MINUS)
-      expect(count()).toBe('0')
+      await wait(() => expect(count()).toBe('0'))
     })
 
-    it('should only render once when update the state right during rendering', () => {
+    it('should only render once when update the state right during rendering', async () => {
       const spy = jest.fn()
       const TestComponent = () => {
         const [state, actions] = useService(Count, { scope: Transient })
@@ -123,14 +130,16 @@ describe('Hooks spec:', () => {
       const renderer = create(<TestComponent />)
 
       // https://github.com/facebook/react/issues/14050 to trigger useEffect manually
-      renderer.update(<TestComponent />)
+      await act(async () => {
+        renderer.update(<TestComponent />)
+      })
       expect(spy.mock.calls).toEqual([[1]])
 
       act(() => renderer.root.findByType('button').props.onClick())
-      expect(spy.mock.calls).toEqual([[1], [3]])
+      waitMacro(() => expect(spy.mock.calls).toEqual([[1], [3]]))
     })
 
-    it('should not trigger re-render if selector is provided', () => {
+    it('should not trigger re-render if selector is provided', async () => {
       const spy = jest.fn()
 
       const TestComponent = () => {
@@ -150,7 +159,7 @@ describe('Hooks spec:', () => {
       // https://github.com/facebook/react/issues/14050 to trigger useEffect manually
       renderer.update(<TestComponent />)
       act(() => renderer.root.findByProps({ id: CountAction.ADD }).props.onClick())
-      expect(spy.mock.calls).toHaveLength(2)
+      waitMacro(() => expect(spy.mock.calls).toHaveLength(2))
     })
     it('should not trigger re-render when using useAction', () => {
       const spy = jest.fn()
@@ -229,9 +238,9 @@ describe('Hooks spec:', () => {
         expect(count()).toBe('1')
       })
 
-      it('Effect action work properly', () => {
+      it('Effect action work properly', async () => {
         click(CountAction.MINUS)
-        expect(count()).toBe('0')
+        await wait(() => expect(count()).toBe('0'))
       })
     })
 
@@ -260,9 +269,9 @@ describe('Hooks spec:', () => {
         expect(count()).toBe('0')
       })
 
-      it('Effect action work properly', () => {
+      it('Effect action work properly', async () => {
         click(CountAction.MINUS)
-        expect(count()).toBe('-1')
+        await wait(() => expect(count()).toBe('-1'))
       })
     })
 
@@ -291,9 +300,9 @@ describe('Hooks spec:', () => {
         expect(count()).toBe('0')
       })
 
-      it('Effect action work properly', () => {
+      it('Effect action work properly', async () => {
         click(CountAction.MINUS)
-        expect(count()).toBe('-1')
+        await wait(() => expect(count()).toBe('-1'))
       })
 
       it('should destroy when component unmount', () => {
@@ -315,10 +324,10 @@ describe('Hooks spec:', () => {
         expect(count()).toBe('1')
       })
 
-      it(`should use new scope's Service if scope changed`, () => {
+      it(`should use new scope's Service if scope changed`, async () => {
         testRenderer.update(<CountComponent scope={2} />)
         click(CountAction.MINUS)
-        expect(count()).toBe('-1')
+        await wait(() => expect(count()).toBe('-1'))
       })
 
       it(`should update state to corresponding one`, () => {

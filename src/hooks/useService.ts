@@ -44,10 +44,10 @@ export function useService<M extends Service<any>>(
   useEffect(() => {
     // singleton
     if (options.scope === Singleton && options.resetOnUnmount) {
-      service.$awake()
+      service.awake()
       return () => {
-        service.$sleep()
-        service.$setState(service.defaultState, true)
+        service.sleep()
+        service.dispatch('reset', { payload: service.defaultState, replace: true })
       }
     }
     return undefined

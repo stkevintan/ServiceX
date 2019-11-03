@@ -1,6 +1,6 @@
 {
   "name": "service-x",
-  "version": "1.1.6",
+  "version": "1.2.2",
   "description": "serviceX is a state management solution for react",
   "main": "dist/index.js",
   "module": "esm/index.js",
@@ -41,9 +41,9 @@
   "license": "MIT",
   "devDependencies": {
     "@types/jest": "^24.0.15",
-    "@types/react": "^16.8.23",
-    "@types/react-dom": "^16.8.4",
-    "@types/react-test-renderer": "^16.8.2",
+    "@types/react": "^16.9.11",
+    "@types/react-dom": "^16.9.3",
+    "@types/react-test-renderer": "^16.9.1",
     "@typescript-eslint/eslint-plugin": "^1.11.0",
     "@typescript-eslint/parser": "^1.11.0",
     "codecov": "^3.5.0",
@@ -60,9 +60,9 @@
     "lint-staged": "^9.0.2",
     "parcel": "^1.12.3",
     "prettier": "^1.18.2",
-    "react": "^16.8.6",
-    "react-dom": "^16.8.6",
-    "react-test-renderer": "^16.8.6",
+    "react": "^16.11.0",
+    "react-dom": "^16.11.0",
+    "react-test-renderer": "^16.11.0",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^2.6.3",
     "rxjs": "^6.5.2",
@@ -71,9 +71,9 @@
   },
   "peerDependencies": {
     "immer": "^3.1.2",
+    "inversify": "^5.0.1",
     "react": "^16.8.6",
     "reflect-metadata": "^0.1.13",
-    "rxjs": "^6.4.0",
-    "inversify": "^5.0.1"
+    "rxjs": "^6.4.0"
   }
 }

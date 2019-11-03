@@ -1,5 +1,5 @@
 import { Observable } from 'rxjs'
-import { map } from 'rxjs/operators'
+import { map, elementAt } from 'rxjs/operators'
 
 import {
   Service,
@@ -41,7 +41,6 @@ describe('DefineAction spec:', () => {
   // const testModule = Test.createTestingModule().compile()
   const count = container.resolveInScope<Count>(Count, Transient)
   const countActions = count.getActions()
-  const getCount = () => count.getState().count
 
   it('should setup properly', () => {
     expect(count.resetCountDown$).toBeInstanceOf(Observable)
@@ -49,6 +48,9 @@ describe('DefineAction spec:', () => {
 
   it('should trigger action properly', () => {
     countActions.resetCountDown$(22)
-    expect(getCount()).toBe(22)
+    count
+      .getState$()
+      .pipe(elementAt(1))
+      .subscribe((state) => expect(state.count).toBe(22))
   })
 })

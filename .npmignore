@@ -11,6 +11,7 @@ tsconfig.json
 tsconfig.build.json
 tslint.json
 yarn.lock
+yarn-error.log
 *.tgz
 .cache
 jest.config.js

@@ -1,5 +1,5 @@
 import { Observable, of } from 'rxjs'
-import { map, mergeMap, withLatestFrom } from 'rxjs/operators'
+import { map, mergeMap, withLatestFrom, elementAt } from 'rxjs/operators'
 
 import {
   Service,
@@ -12,6 +12,8 @@ import {
   Scope,
   Transient,
 } from '../../src'
+
+const wait = (fn: (...args: any[]) => any) => Promise.resolve().then(() => fn())
 
 interface TipsState {
   tips: string
@@ -92,24 +94,23 @@ describe('Effect spec:', () => {
   const countActions = count.getActions()
   const tips = count.tips
   const getCount = () => count.getState().count
-  const getTips = () => tips.getState().tips
 
   describe('Emitted EffectAction will trigger corresponding Action', () => {
-    it('Reducer Action', () => {
-      countActions.add(1)
-      expect(getCount()).toBe(1)
-      expect(getTips()).toBe('add 1')
-    })
-
-    it('Effect Action', () => {
+    it('Effect Action', async () => {
       countActions.minus(1)
-      expect(getCount()).toBe(0)
-      expect(getTips()).toBe('minus 1')
+      await Promise.all([
+        wait(() => expect(getCount()).toBe(-1)),
+        tips
+          .getState$()
+          .pipe(elementAt(1))
+          .toPromise()
+          .then((state) => expect(state.tips).toBe('minus 1')),
+      ])
     })
   })
 
   describe('Error handles', () => {
-    it(`Error won't affect the main state$`, () => {
+    it(`Error won't affect the main state$`, async () => {
       const errorLog = jest.spyOn(console, 'error').mockImplementation(() => {})
       countActions.error()
       expect(errorLog.mock.calls.length).toBe(1)
@@ -118,7 +119,7 @@ describe('Effect spec:', () => {
       countActions.add(1)
       countActions.minus(2)
       countActions.minus(3)
-      expect(getCount()).toBe(-4)
+      await wait(() => expect(getCount()).toBe(-4))
     })
   })
 })

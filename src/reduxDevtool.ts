@@ -1,40 +1,56 @@
-import { noop } from './utils'
-
-interface DevTools {
-  send(action: { type: string }, state?: Partial<GlobalState>): void
-  init(state: GlobalState): void
-}
+import { BehaviorSubject } from 'rxjs'
 
 interface GlobalState {
   [modelName: string]: object
 }
 
-const FakeReduxDevTools = {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  connect: (_config: object) => ({ send: noop, init: noop }),
-}
-
-const ReduxDevTools =
-  (typeof window !== 'undefined' && (window as any).__REDUX_DEVTOOLS_EXTENSION__) ||
-  FakeReduxDevTools
-
+const instrument = typeof window !== 'undefined' && (window as any).__REDUX_DEVTOOLS_EXTENSION__
 const STATE: GlobalState = {}
 
-const getDevTools = (() => {
-  let devTools: DevTools
+interface Action {
+  type: string
+  params?: any
+}
 
-  return (): DevTools => {
-    if (!devTools) {
-      devTools = ReduxDevTools.connect({ name: `Service` })
-      devTools.init({})
-    }
-    return devTools
+type Reducer = (state: GlobalState | undefined, action: Action) => GlobalState | undefined
+const reducer: Reducer = () => (STATE ? { ...STATE } : STATE)
+
+const createStore = (reducer: Reducer) => {
+  const currentState$ = new BehaviorSubject<GlobalState | undefined>(undefined)
+  const getState = () => currentState$.getValue()
+  const dispatch = (action: Action) => {
+    const currentState = reducer(getState(), action)
+    currentState$.next(currentState)
+    return action
   }
-})()
+
+  dispatch({ type: '@@redux/INIT' })
+  return {
+    getState,
+    dispatch,
+    subscribe: currentState$.subscribe.bind(currentState$),
+  }
+}
+
+const store = instrument
+  ? instrument({
+      name: 'ServiceX',
+      pause: false, // start/pause recording of dispatched actions
+      lock: false, // lock/unlock dispatching actions and side effects
+      export: true, // export history of actions in a file
+      import: 'custom', // import history of actions from a file
+      jump: false, // jump back and forth (time travelling)
+      skip: false, // Cannot skip for we cannot replay.
+      reorder: false, // Cannot skip for we cannot replay.
+      persist: false, // Avoid trying persistence.
+      dispatch: false,
+      test: false,
+    })(createStore)(reducer)
+  : undefined
 
 export function logStateAction(
   namespace: string,
-  infos: { actionName: string; params: string; state?: any },
+  infos: { actionName: string; params: any; state?: any },
 ) {
   const action = {
     type: `${namespace}/${infos.actionName}`,
@@ -44,6 +60,5 @@ export function logStateAction(
   if (infos.state) {
     STATE[namespace] = infos.state
   }
-
-  getDevTools().send(action, STATE)
+  if (store) store.dispatch(action)
 }

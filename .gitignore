@@ -8,3 +8,5 @@ dist/
 .DS_Store
 esm
 esnext
+yarn-error.log
+.vscode
