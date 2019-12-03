@@ -1,5 +1,5 @@
 import { merge, Observable, Subject, Subscription, NEVER, from } from 'rxjs'
-import { map, catchError, delayWhen } from 'rxjs/operators'
+import { map, catchError, filter, delayWhen } from 'rxjs/operators'
 import { mapValues } from './utils/helpers'
 import produce from 'immer'
 
@@ -39,6 +39,10 @@ function catchRxError() {
   })
 }
 
+function warnWhenSleep(type: string) {
+  console.warn(`Current ${type} could not take effects, because store is sleeping: `)
+}
+
 export class Store<State> {
   state: BasicState<State>
 
@@ -46,71 +50,30 @@ export class Store<State> {
 
   subscription = new Subscription()
 
-  private effectSub: Subscription | undefined
+  private isActive = true
 
-  private effects: Record<string, Subject<any>> = {}
-
-  initEffects = () => {
-    if (this.effectSub) {
-      // re init
-      return
-    }
-    this.effectSub = new Subscription()
-    for (const actionName of Object.keys(this.config.effects)) {
-      // if exist subscription
-      if (this.effects[actionName]) continue
-      this.effects[actionName] = new Subject<any>()
-      this.effectSub.add(
-        this.config.effects[actionName](this.effects[actionName], this.state.state$)
-          .pipe(
-            // a promise delay
-            delayWhen(() => from(Promise.resolve())),
-            map(
-              (effectAction): Action<State> => {
-                return {
-                  effectAction,
-                  originalActionName: actionName,
-                }
-              },
-            ),
-            catchRxError(),
-          )
-          .subscribe((action) => {
-            this.log(action)
-            this.handleAction(action)
-          }),
-      )
-    }
+  sleep() {
+    this.isActive = false
   }
 
-  destroyEffects = () => {
-    for (const actionName of Object.keys(this.config.effects)) {
-      if (this.effects[actionName]) {
-        this.effects[actionName].complete()
-      }
-    }
-    if (this.effectSub) this.effectSub.unsubscribe()
-    this.effectSub = undefined
-    this.effects = {}
+  awake() {
+    this.isActive = true
   }
 
   constructor(private readonly config: Readonly<Config<State>>) {
     this.state = new BasicState<State>(config.defaultState)
-    const effectActions: TriggerActions = {}
-    for (const actionName of Object.keys(this.config.effects)) {
-      effectActions[actionName] = (payload: any) => {
-        if (this.effects[actionName]) {
-          this.effects[actionName].next(payload)
-        }
-      }
-    }
 
-    const [reducerActions$, reducerActions] = setupReducerActions(
+    const [effectActions$, effectActions] = this.setupEffectActions(
+      this.config.effects,
+      this.state.state$,
+    )
+
+    const [reducerActions$, reducerActions] = this.setupReducerActions(
       this.config.reducers,
       this.state.getState,
     )
 
-    const [immerReducerActions$, immerReducerActions] = setupImmerReducerActions(
+    const [immerReducerActions$, immerReducerActions] = this.setupImmerReducerActions(
       this.config.immerReducers,
       this.state.getState,
     )
@@ -119,8 +82,23 @@ export class Store<State> {
       ...effectActions,
       ...reducerActions,
       ...immerReducerActions,
-      ...mapValues(this.config.defineActions, ({ next }) => next),
+      ...mapValues(this.config.defineActions, ({ next }) => {
+        return (params: any) => {
+          if (!this.isActive) {
+            warnWhenSleep('defineAction')
+            return
+          }
+          next(params)
+        }
+      }),
     }
+
+    this.subscription.add(
+      effectActions$.subscribe((action) => {
+        this.log(action)
+        this.handleAction(action)
+      }),
+    )
 
     this.subscription.add(
       reducerActions$.subscribe((action) => {
@@ -139,7 +117,6 @@ export class Store<State> {
 
   destroy() {
     this.subscription.unsubscribe()
-    this.destroyEffects()
     this.triggerActions = {}
   }
 
@@ -170,58 +147,105 @@ export class Store<State> {
       this.state.setState(reducerAction.nextState)
     }
   }
-}
+  private setupEffectActions<State>(
+    effectActions: OriginalEffectActions<State>,
+    state$: Observable<State>,
+  ): [Observable<Action<State>>, TriggerActions] {
+    const actions: TriggerActions = {}
+    const effects: Observable<Action<State>>[] = []
 
-function setupReducerActions<State>(
-  reducerActions: OriginalReducerActions<State>,
-  getState: () => State,
-): [Observable<Action<State>>, TriggerActions] {
-  const actions: TriggerActions = {}
-  const reducers: Observable<Action<State>>[] = []
+    Object.keys(effectActions).forEach((actionName) => {
+      const payload$ = new Subject<any>()
+      actions[actionName] = (payload: any) => {
+        if (!this.isActive) {
+          warnWhenSleep('effectAction')
+          return
+        }
+        payload$.next(payload)
+      }
 
-  Object.keys(reducerActions).forEach((actionName) => {
-    const reducer$ = new Subject<Action<State>>()
-    reducers.push(reducer$)
+      //FIXME: how to avoid this recuring boom?
+      const effect$: Observable<EffectAction> = effectActions[actionName](payload$, state$)
 
-    const reducer = reducerActions[actionName]
+      effects.push(
+        effect$.pipe(
+          filter(() => this.isActive),
+          // a promise delay
+          delayWhen(() => from(Promise.resolve())),
+          map(
+            (effectAction): Action<State> => {
+              return {
+                effectAction,
+                originalActionName: actionName,
+              }
+            },
+          ),
+          catchRxError(),
+        ),
+      )
+    })
 
-    actions[actionName] = (params: any) => {
-      const nextState = reducer(getState(), params)
+    return [merge(...effects), actions]
+  }
 
-      reducer$.next({
-        reducerAction: { params, actionName, nextState },
-        originalActionName: actionName,
-      })
-    }
-  })
+  private setupReducerActions<State>(
+    reducerActions: OriginalReducerActions<State>,
+    getState: () => State,
+  ): [Observable<Action<State>>, TriggerActions] {
+    const actions: TriggerActions = {}
+    const reducers: Observable<Action<State>>[] = []
 
-  return [merge(...reducers), actions]
-}
+    Object.keys(reducerActions).forEach((actionName) => {
+      const reducer$ = new Subject<Action<State>>()
+      reducers.push(reducer$)
 
-function setupImmerReducerActions<State>(
-  immerReducerActions: OriginalImmerReducerActions<State>,
-  getState: () => State,
-): [Observable<Action<State>>, TriggerActions] {
-  const actions: TriggerActions = {}
-  const immerReducers: Observable<Action<State>>[] = []
+      const reducer = reducerActions[actionName]
 
-  Object.keys(immerReducerActions).forEach((actionName) => {
-    const immerReducer$ = new Subject<Action<State>>()
-    immerReducers.push(immerReducer$)
+      actions[actionName] = (params: any) => {
+        if (!this.isActive) {
+          warnWhenSleep('reducerAction')
+          return
+        }
+        const nextState = reducer(getState(), params)
+        reducer$.next({
+          reducerAction: { params, actionName, nextState },
+          originalActionName: actionName,
+        })
+      }
+    })
 
-    const immerReducer = immerReducerActions[actionName]
+    return [merge(...reducers), actions]
+  }
 
-    actions[actionName] = (params: any) => {
-      const nextState = produce(getState(), (draft) => {
-        immerReducer(draft, params)
-      })
+  private setupImmerReducerActions<State>(
+    immerReducerActions: OriginalImmerReducerActions<State>,
+    getState: () => State,
+  ): [Observable<Action<State>>, TriggerActions] {
+    const actions: TriggerActions = {}
+    const immerReducers: Observable<Action<State>>[] = []
 
-      immerReducer$.next({
-        reducerAction: { params, actionName, nextState },
-        originalActionName: actionName,
-      })
-    }
-  })
+    Object.keys(immerReducerActions).forEach((actionName) => {
+      const immerReducer$ = new Subject<Action<State>>()
+      immerReducers.push(immerReducer$)
 
-  return [merge(...immerReducers), actions]
+      const immerReducer = immerReducerActions[actionName]
+
+      actions[actionName] = (params: any) => {
+        if (!this.isActive) {
+          warnWhenSleep('immerReducerAction')
+          return
+        }
+        const nextState = produce(getState(), (draft) => {
+          immerReducer(draft, params)
+        })
+
+        immerReducer$.next({
+          reducerAction: { params, actionName, nextState },
+          originalActionName: actionName,
+        })
+      }
+    })
+
+    return [merge(...immerReducers), actions]
+  }
 }

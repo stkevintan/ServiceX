@@ -48,15 +48,14 @@ export abstract class Service<State> {
       defineActions,
     })
     Reflect.defineMetadata(StoreSymbol, store, this)
-    store.initEffects()
   }
 
   sleep() {
-    this.store.destroyEffects()
+    this.store.sleep()
   }
 
   awake() {
-    this.store.initEffects()
+    this.store.awake()
   }
 
   // TODO: set this to extract loading State logical
@@ -103,6 +102,12 @@ export abstract class Service<State> {
   // })
 
   getActions<M extends Service<State>>(this: M): ActionMethodOfService<M, State> {
-    return this.store.triggerActions as any
+    const actions: any = this.store.triggerActions || {}
+    // if (this.store.isActive) {
+    //   return actions
+    // } else {
+    //   return
+    // }
+    return actions
   }
 }

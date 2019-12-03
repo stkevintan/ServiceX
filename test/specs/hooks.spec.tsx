@@ -14,6 +14,7 @@ import {
   useAction,
   container,
   useInstanceAction,
+  Singleton,
 } from '../../src'
 import { useCallback, useEffect } from 'react'
 
@@ -62,7 +63,7 @@ class Count extends Service<State> {
 }
 
 function CountComponent({ scope }: { scope?: any }) {
-  const [state, actions] = useService(Count, { scope })
+  const [state, actions] = useService(Count, { scope: scope || Transient })
 
   const add = (count: number) => () => actions.add(count)
   const minus = (count: number) => () => actions.minus(count)
@@ -163,10 +164,10 @@ describe('Hooks spec:', () => {
     })
     it('should not trigger re-render when using useAction', () => {
       const spy = jest.fn()
-      const count = container.resolveInScope(Count, Transient)
+      const count = container.resolveInScope(Count, 'a')
 
       const TestComponent = () => {
-        const actions = useAction(Count)
+        const actions = useAction(Count, { scope: 'a' })
         const actions2 = useInstanceAction(count)
         const addOne = useCallback(() => actions.add(1), [actions])
         const minusOne = useCallback(() => actions2.minus(1), [actions2])
@@ -192,7 +193,7 @@ describe('Hooks spec:', () => {
     it('should not re-render if selector result is not change', () => {
       const spy = jest.fn()
       const TestComponent = () => {
-        const [start, actions] = useService(Count, (state) => state.start)
+        const [start, actions] = useService(Count, (state) => state.start, { scope: Transient })
         const addOne = useCallback(() => actions.add(1), [actions])
         spy()
         return (
@@ -212,6 +213,37 @@ describe('Hooks spec:', () => {
     })
   })
 
+  describe('Awake and Sleep', () => {
+    describe('action trigger in sleep', () => {
+      it('should not reaction when service is sleep', () => {
+        const spy = jest.fn()
+        const TestComponent = () => {
+          const [count, actions] = useService(Count, (state) => state.count)
+          useEffect(() => {
+            spy(count)
+          }, [count])
+          return (
+            <div>
+              <button id={CountAction.ADD} onClick={() => actions.add(1)}>
+                add one
+              </button>
+            </div>
+          )
+        }
+        const renderer = create(<TestComponent />)
+        // https://github.com/facebook/react/issues/14050 to trigger useEffect manually
+        renderer.update(<TestComponent />)
+
+        act(() => renderer.root.findByProps({ id: CountAction.ADD }).props.onClick())
+        const count = container.resolveInScope(Count, Singleton)
+        count.sleep()
+        act(() => renderer.root.findByProps({ id: CountAction.ADD }).props.onClick())
+        act(() => renderer.root.findByProps({ id: CountAction.ADD }).props.onClick())
+        count.dispatch('reset', { payload: { count: 0 } })
+        waitMacro(() => expect(spy.mock.calls).toEqual([[0], [1], [0]]))
+      })
+    })
+  })
   describe('Scope behavior', () => {
     describe('Same scope will share state and actions', () => {
       const scope = Symbol('scope')

@@ -34,6 +34,7 @@ export const ScopeSymbol = Symbol('scope')
 export const ScopeKeySymbol = Symbol('scopeKey')
 export const StoreSymbol = Symbol('store')
 export const InjectSymbol = Symbol('inject')
+// export const StatusSymbol = Symbol('status')
 
 export const Singleton = Symbol('singleton')
 export const Transient = Symbol('transient')

@@ -10,12 +10,12 @@ export function useServiceSelector<
   F = S
 >(service: M, selector?: (state: Readonly<S>) => F): F {
   const serviceRef = useRef<Service<any> | null>(null)
-  const skipCountRef = useRef(1)
   const subscriptionRef = useRef<Subscription | null>(null)
   const [state, setState] = useState(() =>
     selector ? selector(service.getState()) : service.getState(),
   )
   if (serviceRef.current !== service) {
+    const count = serviceRef.current === null ? 1 : 0
     serviceRef.current = service
     if (subscriptionRef.current) {
       subscriptionRef.current.unsubscribe()
@@ -26,13 +26,12 @@ export function useServiceSelector<
       subscriptionRef.current = service
         .getState$()
         .pipe(
-          skip(skipCountRef.current),
+          skip(count),
           map((state) => (selector ? selector(state) : state)),
           distinctUntilChanged(shallowEqual),
         )
         .subscribe(setState)
     }
-    skipCountRef.current = 0
   }
 
   useEffect(

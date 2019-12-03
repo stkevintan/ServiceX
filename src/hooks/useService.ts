@@ -41,6 +41,8 @@ export function useService<M extends Service<any>>(
     return container.resolveInScope(serviceIdentifier, options.scope!)
   }, [options.scope, serviceIdentifier])
 
+  service.awake()
+
   useEffect(() => {
     // singleton
     if (options.scope === Singleton && options.resetOnUnmount) {
