@@ -44,8 +44,8 @@ export function useService<M extends Service<any>>(
   service.awake()
 
   useEffect(() => {
-    // singleton
-    if (options.scope === Singleton && options.resetOnUnmount) {
+    // resetOnUnmount
+    if (options.scope !== Transient && options.scope !== Request && options.resetOnUnmount) {
       service.awake()
       return () => {
         service.sleep()
