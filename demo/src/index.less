@@ -1,0 +1,42 @@
+.search {
+  width: 270px;
+  display: block;
+  line-height: 25px;
+  padding: 0 10px;
+}
+
+.entries {
+  list-style: none;
+  padding-left: 0;
+  margin: 10px 0;
+  display: inline-block;
+  border: 1px solid #e8e8e8;
+  border-bottom: none;
+  .entry {
+    padding: 3px 10px;
+    width: 250px;
+    display: flex;
+    align-items: center;
+    line-height: 25px;
+    justify-content: space-between;
+    border-bottom: 1px solid #e8e8e8;
+  }
+}
+.empty,
+.loading {
+  border-top: 1px solid #e8e8e8;
+  border-bottom: 1px solid #e8e8e8;
+  margin: 10px 0;
+  padding: 15px;
+  color: #888;
+  width: 250px;
+}
+
+.loading {
+  color: #333;
+}
+
+button {
+  display: block;
+  margin-top: 10px;
+}

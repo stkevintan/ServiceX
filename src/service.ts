@@ -26,7 +26,7 @@ export abstract class Service<State> {
 
   private get store(): Store<State> {
     if (!Reflect.hasMetadata(StoreSymbol, this)) {
-      throw new Error(`Store is destroyed or not created at now, ${this.constructor.name}`)
+      throw new Error(`Store is destroyed or not created currently, ${this.constructor.name}`)
     }
     const store = Reflect.getMetadata(StoreSymbol, this)
 
